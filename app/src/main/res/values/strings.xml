@@ -3,9 +3,14 @@
     <string name="child_name_olivia">Olivia</string>
     <string name="looloo_name">LooLoo</string>
     <string name="looloo_greeting">Hi, %1$s!</string>
+    <string name="looloo_listening_greeting">I\'m listening, %1$s!</string>
     <string name="looloo_ready">Ready</string>
+    <string name="looloo_listening">Listening</string>
     <string name="looloo_talk_action">Talk to LooLoo</string>
+    <string name="looloo_done_action">I\'m Done</string>
     <string name="looloo_tap_prompt">Tap when you’re ready!</string>
+    <string name="looloo_listening_prompt">Tap when you’re finished.</string>
     <string name="looloo_ready_content_description">LooLoo is ready</string>
+    <string name="looloo_listening_content_description">LooLoo is listening</string>
     <string name="looloo_avatar_content_description">LooLoo, a smiling magical snow friend</string>
 </resources>

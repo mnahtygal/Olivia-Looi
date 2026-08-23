@@ -22,7 +22,10 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.res.stringResource
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -33,8 +36,11 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -55,9 +61,25 @@ import com.nahtygal.olivialooi.ui.theme.SnowWhite
 
 @Composable
 fun LooLooHomeScreen(
-    onTalkClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    var isListening by remember { mutableStateOf(false) }
+
+    LooLooHomeContent(
+        isListening = isListening,
+        onToggleListening = { isListening = !isListening },
+        modifier = modifier,
+    )
+}
+
+@Composable
+private fun LooLooHomeContent(
+    isListening: Boolean,
+    onToggleListening: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val childName = stringResource(R.string.child_name_olivia)
+
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -77,7 +99,10 @@ fun LooLooHomeScreen(
                 .padding(horizontal = 24.dp, vertical = 14.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            ReadyStatus(modifier = Modifier.align(Alignment.End))
+            LooLooStatus(
+                isListening = isListening,
+                modifier = Modifier.align(Alignment.End),
+            )
 
             Text(
                 text = stringResource(R.string.looloo_name),
@@ -89,8 +114,12 @@ fun LooLooHomeScreen(
             )
             Text(
                 text = stringResource(
-                    R.string.looloo_greeting,
-                    stringResource(R.string.child_name_olivia),
+                    if (isListening) {
+                        R.string.looloo_listening_greeting
+                    } else {
+                        R.string.looloo_greeting
+                    },
+                    childName,
                 ),
                 color = IceBlue,
                 fontSize = 24.sp,
@@ -106,6 +135,7 @@ fun LooLooHomeScreen(
                 contentAlignment = Alignment.Center,
             ) {
                 LooLooAvatar(
+                    isListening = isListening,
                     modifier = Modifier
                         .fillMaxHeight()
                         .fillMaxWidth(0.88f),
@@ -113,12 +143,19 @@ fun LooLooHomeScreen(
             }
 
             TalkToLooLooButton(
-                onClick = onTalkClick,
+                isListening = isListening,
+                onClick = onToggleListening,
                 modifier = Modifier.fillMaxWidth(),
             )
             Spacer(modifier = Modifier.height(12.dp))
             Text(
-                text = stringResource(R.string.looloo_tap_prompt),
+                text = stringResource(
+                    if (isListening) {
+                        R.string.looloo_listening_prompt
+                    } else {
+                        R.string.looloo_tap_prompt
+                    },
+                ),
                 modifier = Modifier
                     .background(DeepIndigo, RoundedCornerShape(50))
                     .padding(horizontal = 14.dp, vertical = 6.dp),
@@ -131,8 +168,20 @@ fun LooLooHomeScreen(
 }
 
 @Composable
-private fun ReadyStatus(modifier: Modifier = Modifier) {
-    val readyDescription = stringResource(R.string.looloo_ready_content_description)
+private fun LooLooStatus(
+    isListening: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    val statusLabel = stringResource(
+        if (isListening) R.string.looloo_listening else R.string.looloo_ready,
+    )
+    val statusDescription = stringResource(
+        if (isListening) {
+            R.string.looloo_listening_content_description
+        } else {
+            R.string.looloo_ready_content_description
+        },
+    )
 
     Row(
         modifier = modifier
@@ -141,7 +190,10 @@ private fun ReadyStatus(modifier: Modifier = Modifier) {
                 shape = RoundedCornerShape(50),
             )
             .padding(horizontal = 14.dp, vertical = 8.dp)
-            .clearAndSetSemantics { contentDescription = readyDescription },
+            .clearAndSetSemantics {
+                contentDescription = statusDescription
+                liveRegion = LiveRegionMode.Polite
+            },
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
@@ -151,7 +203,7 @@ private fun ReadyStatus(modifier: Modifier = Modifier) {
         )
         Spacer(modifier = Modifier.width(8.dp))
         Text(
-            text = stringResource(R.string.looloo_ready),
+            text = statusLabel,
             color = SnowWhite,
             fontSize = 15.sp,
             fontWeight = FontWeight.Bold,
@@ -161,6 +213,7 @@ private fun ReadyStatus(modifier: Modifier = Modifier) {
 
 @Composable
 private fun TalkToLooLooButton(
+    isListening: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -180,7 +233,9 @@ private fun TalkToLooLooButton(
         SparkleIcon(modifier = Modifier.size(30.dp))
         Spacer(modifier = Modifier.width(12.dp))
         Text(
-            text = stringResource(R.string.looloo_talk_action),
+            text = stringResource(
+                if (isListening) R.string.looloo_done_action else R.string.looloo_talk_action,
+            ),
             textAlign = TextAlign.Center,
             fontSize = 23.sp,
             fontWeight = FontWeight.ExtraBold,
@@ -235,7 +290,10 @@ private fun WinterBackdrop(modifier: Modifier = Modifier) {
 
 /** An original, friendly snow-sprite made entirely from Compose drawing primitives. */
 @Composable
-private fun LooLooAvatar(modifier: Modifier = Modifier) {
+private fun LooLooAvatar(
+    isListening: Boolean,
+    modifier: Modifier = Modifier,
+) {
     val avatarDescription = stringResource(R.string.looloo_avatar_content_description)
 
     Canvas(
@@ -252,13 +310,25 @@ private fun LooLooAvatar(modifier: Modifier = Modifier) {
 
         drawCircle(
             brush = Brush.radialGradient(
-                colors = listOf(IceBlue.copy(alpha = 0.42f), Color.Transparent),
+                colors = listOf(
+                    IceBlue.copy(alpha = if (isListening) 0.72f else 0.42f),
+                    Color.Transparent,
+                ),
                 center = center,
                 radius = 148f * scale,
             ),
             center = center,
             radius = 148f * scale,
         )
+
+        if (isListening) {
+            drawCircle(
+                color = FrostBlue.copy(alpha = 0.42f),
+                radius = 140f * scale,
+                center = center,
+                style = Stroke(width = 5f * scale),
+            )
+        }
 
         listOf(point(-112f, -74f), point(112f, -42f), point(-104f, 72f)).forEachIndexed { index, crystal ->
             val arm = (11f - index * 2f) * scale
@@ -272,6 +342,20 @@ private fun LooLooAvatar(modifier: Modifier = Modifier) {
                         cap = StrokeCap.Round,
                     )
                 }
+            }
+        }
+
+        if (isListening) {
+            listOf(32f, 44f).forEachIndexed { index, waveRadius ->
+                drawArc(
+                    color = FrostBlue.copy(alpha = 0.9f - index * 0.2f),
+                    startAngle = -55f,
+                    sweepAngle = 110f,
+                    useCenter = false,
+                    topLeft = point(82f - waveRadius, -38f - waveRadius),
+                    size = Size(waveRadius * 2f * scale, waveRadius * 2f * scale),
+                    style = Stroke(width = 3f * scale, cap = StrokeCap.Round),
+                )
             }
         }
 
@@ -357,6 +441,26 @@ private fun LooLooAvatar(modifier: Modifier = Modifier) {
 @Composable
 private fun LooLooHomeScreenPreview() {
     OliviaLooiTheme {
-        LooLooHomeScreen(onTalkClick = {})
+        LooLooHomeContent(
+            isListening = false,
+            onToggleListening = {},
+        )
+    }
+}
+
+@Preview(
+    name = "LooLoo listening",
+    showBackground = true,
+    widthDp = 360,
+    heightDp = 640,
+    fontScale = 1.3f,
+)
+@Composable
+private fun LooLooListeningPreview() {
+    OliviaLooiTheme {
+        LooLooHomeContent(
+            isListening = true,
+            onToggleListening = {},
+        )
     }
 }
