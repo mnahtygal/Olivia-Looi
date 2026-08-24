@@ -1,5 +1,10 @@
 package com.nahtygal.olivialooi.ui.home
 
+import android.Manifest
+import android.annotation.SuppressLint
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -22,10 +27,13 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -36,6 +44,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -47,7 +56,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.nahtygal.olivialooi.R
+import com.nahtygal.olivialooi.audio.MicrophoneCapture
 import com.nahtygal.olivialooi.ui.theme.AuroraPurple
 import com.nahtygal.olivialooi.ui.theme.DeepIndigo
 import com.nahtygal.olivialooi.ui.theme.FrostBlue
@@ -59,26 +73,144 @@ import com.nahtygal.olivialooi.ui.theme.SkyBlue
 import com.nahtygal.olivialooi.ui.theme.SparklePurple
 import com.nahtygal.olivialooi.ui.theme.SnowWhite
 
+private enum class MicrophoneUiState {
+    Ready,
+    Starting,
+    Listening,
+    PermissionDenied,
+    Error,
+}
+
 @Composable
 fun LooLooHomeScreen(
     modifier: Modifier = Modifier,
 ) {
-    var isListening by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+    var microphoneState by remember { mutableStateOf(MicrophoneUiState.Ready) }
+    var microphoneAmplitude by remember { mutableFloatStateOf(0f) }
+    var permissionRequestAttempted by rememberSaveable { mutableStateOf(false) }
+
+    val mainExecutor = remember(context) {
+        ContextCompat.getMainExecutor(context.applicationContext)
+    }
+    val microphoneCapture = remember(mainExecutor) {
+        MicrophoneCapture(
+            callbackExecutor = mainExecutor,
+            onStarted = { microphoneState = MicrophoneUiState.Listening },
+            onAmplitude = { microphoneAmplitude = it },
+            onError = {
+                microphoneAmplitude = 0f
+                microphoneState = MicrophoneUiState.Error
+            },
+        )
+    }
+
+    @SuppressLint("MissingPermission")
+    fun startMicrophone() {
+        microphoneAmplitude = 0f
+        microphoneState = MicrophoneUiState.Starting
+        microphoneCapture.start()
+    }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+    ) { granted ->
+        if (granted) {
+            startMicrophone()
+        } else {
+            microphoneAmplitude = 0f
+            microphoneState = MicrophoneUiState.PermissionDenied
+        }
+    }
+
+    DisposableEffect(lifecycleOwner, microphoneCapture) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_STOP) {
+                microphoneCapture.stop()
+                microphoneAmplitude = 0f
+                if (
+                    microphoneState == MicrophoneUiState.Starting ||
+                    microphoneState == MicrophoneUiState.Listening
+                ) {
+                    microphoneState = MicrophoneUiState.Ready
+                }
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+            microphoneCapture.close()
+        }
+    }
+
+    val onPrimaryAction = {
+        when (microphoneState) {
+            MicrophoneUiState.Listening -> {
+                microphoneCapture.stop()
+                microphoneAmplitude = 0f
+                microphoneState = MicrophoneUiState.Ready
+            }
+
+            MicrophoneUiState.Starting -> Unit
+
+            else -> {
+                val hasPermission = ContextCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.RECORD_AUDIO,
+                ) == PackageManager.PERMISSION_GRANTED
+
+                when {
+                    hasPermission -> startMicrophone()
+                    !permissionRequestAttempted -> {
+                        permissionRequestAttempted = true
+                        microphoneState = MicrophoneUiState.Starting
+                        permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                    }
+
+                    else -> microphoneState = MicrophoneUiState.PermissionDenied
+                }
+            }
+        }
+    }
 
     LooLooHomeContent(
-        isListening = isListening,
-        onToggleListening = { isListening = !isListening },
+        microphoneState = microphoneState,
+        microphoneAmplitude = microphoneAmplitude,
+        onPrimaryAction = onPrimaryAction,
         modifier = modifier,
     )
 }
 
 @Composable
 private fun LooLooHomeContent(
-    isListening: Boolean,
-    onToggleListening: () -> Unit,
+    microphoneState: MicrophoneUiState,
+    microphoneAmplitude: Float,
+    onPrimaryAction: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val childName = stringResource(R.string.child_name_olivia)
+    val isListening = microphoneState == MicrophoneUiState.Listening
+    val message = when (microphoneState) {
+        MicrophoneUiState.Listening -> stringResource(
+            R.string.looloo_listening_greeting,
+            childName,
+        )
+
+        MicrophoneUiState.PermissionDenied -> stringResource(
+            R.string.looloo_microphone_permission_message,
+        )
+
+        MicrophoneUiState.Error -> stringResource(R.string.looloo_microphone_error_message)
+        else -> stringResource(R.string.looloo_greeting, childName)
+    }
+    val helperText = when (microphoneState) {
+        MicrophoneUiState.Listening -> stringResource(R.string.looloo_listening_prompt)
+        MicrophoneUiState.PermissionDenied -> stringResource(R.string.looloo_microphone_permission_help)
+        MicrophoneUiState.Error -> stringResource(R.string.looloo_microphone_retry_prompt)
+        else -> stringResource(R.string.looloo_tap_prompt)
+    }
 
     Box(
         modifier = modifier
@@ -101,6 +233,7 @@ private fun LooLooHomeContent(
         ) {
             LooLooStatus(
                 isListening = isListening,
+                microphoneAmplitude = microphoneAmplitude,
                 modifier = Modifier.align(Alignment.End),
             )
 
@@ -113,14 +246,10 @@ private fun LooLooHomeContent(
                 lineHeight = 52.sp,
             )
             Text(
-                text = stringResource(
-                    if (isListening) {
-                        R.string.looloo_listening_greeting
-                    } else {
-                        R.string.looloo_greeting
-                    },
-                    childName,
-                ),
+                text = message,
+                modifier = Modifier.semantics {
+                    liveRegion = LiveRegionMode.Polite
+                },
                 color = IceBlue,
                 fontSize = 24.sp,
                 fontWeight = FontWeight.SemiBold,
@@ -136,6 +265,7 @@ private fun LooLooHomeContent(
             ) {
                 LooLooAvatar(
                     isListening = isListening,
+                    microphoneAmplitude = microphoneAmplitude,
                     modifier = Modifier
                         .fillMaxHeight()
                         .fillMaxWidth(0.88f),
@@ -144,18 +274,13 @@ private fun LooLooHomeContent(
 
             TalkToLooLooButton(
                 isListening = isListening,
-                onClick = onToggleListening,
+                enabled = microphoneState != MicrophoneUiState.Starting,
+                onClick = onPrimaryAction,
                 modifier = Modifier.fillMaxWidth(),
             )
             Spacer(modifier = Modifier.height(12.dp))
             Text(
-                text = stringResource(
-                    if (isListening) {
-                        R.string.looloo_listening_prompt
-                    } else {
-                        R.string.looloo_tap_prompt
-                    },
-                ),
+                text = helperText,
                 modifier = Modifier
                     .background(DeepIndigo, RoundedCornerShape(50))
                     .padding(horizontal = 14.dp, vertical = 6.dp),
@@ -170,6 +295,7 @@ private fun LooLooHomeContent(
 @Composable
 private fun LooLooStatus(
     isListening: Boolean,
+    microphoneAmplitude: Float,
     modifier: Modifier = Modifier,
 ) {
     val statusLabel = stringResource(
@@ -208,17 +334,50 @@ private fun LooLooStatus(
             fontSize = 15.sp,
             fontWeight = FontWeight.Bold,
         )
+        if (isListening) {
+            Spacer(modifier = Modifier.width(10.dp))
+            MicrophoneActivityIndicator(
+                amplitude = microphoneAmplitude,
+                modifier = Modifier.size(width = 28.dp, height = 18.dp),
+            )
+        }
+    }
+}
+
+@Composable
+private fun MicrophoneActivityIndicator(
+    amplitude: Float,
+    modifier: Modifier = Modifier,
+) {
+    Canvas(modifier = modifier) {
+        val level = amplitude.coerceIn(0f, 1f)
+        val barScales = listOf(0.65f, 1f, 0.8f)
+        val spacing = size.width / (barScales.size + 1)
+
+        barScales.forEachIndexed { index, barScale ->
+            val height = size.height * (0.25f + level * 0.75f * barScale)
+            val x = spacing * (index + 1)
+            drawLine(
+                color = ReadyMint,
+                start = Offset(x, (size.height - height) / 2f),
+                end = Offset(x, (size.height + height) / 2f),
+                strokeWidth = 4.dp.toPx(),
+                cap = StrokeCap.Round,
+            )
+        }
     }
 }
 
 @Composable
 private fun TalkToLooLooButton(
     isListening: Boolean,
+    enabled: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Button(
         onClick = onClick,
+        enabled = enabled,
         modifier = modifier.heightIn(min = 88.dp),
         shape = RoundedCornerShape(32.dp),
         colors = ButtonDefaults.buttonColors(
@@ -292,6 +451,7 @@ private fun WinterBackdrop(modifier: Modifier = Modifier) {
 @Composable
 private fun LooLooAvatar(
     isListening: Boolean,
+    microphoneAmplitude: Float,
     modifier: Modifier = Modifier,
 ) {
     val avatarDescription = stringResource(R.string.looloo_avatar_content_description)
@@ -311,7 +471,13 @@ private fun LooLooAvatar(
         drawCircle(
             brush = Brush.radialGradient(
                 colors = listOf(
-                    IceBlue.copy(alpha = if (isListening) 0.72f else 0.42f),
+                    IceBlue.copy(
+                        alpha = if (isListening) {
+                            0.52f + microphoneAmplitude.coerceIn(0f, 1f) * 0.38f
+                        } else {
+                            0.42f
+                        },
+                    ),
                     Color.Transparent,
                 ),
                 center = center,
@@ -323,7 +489,9 @@ private fun LooLooAvatar(
 
         if (isListening) {
             drawCircle(
-                color = FrostBlue.copy(alpha = 0.42f),
+                color = FrostBlue.copy(
+                    alpha = 0.3f + microphoneAmplitude.coerceIn(0f, 1f) * 0.5f,
+                ),
                 radius = 140f * scale,
                 center = center,
                 style = Stroke(width = 5f * scale),
@@ -348,7 +516,9 @@ private fun LooLooAvatar(
         if (isListening) {
             listOf(32f, 44f).forEachIndexed { index, waveRadius ->
                 drawArc(
-                    color = FrostBlue.copy(alpha = 0.9f - index * 0.2f),
+                    color = FrostBlue.copy(
+                        alpha = 0.55f + microphoneAmplitude.coerceIn(0f, 1f) * 0.35f - index * 0.15f,
+                    ),
                     startAngle = -55f,
                     sweepAngle = 110f,
                     useCenter = false,
@@ -442,8 +612,9 @@ private fun LooLooAvatar(
 private fun LooLooHomeScreenPreview() {
     OliviaLooiTheme {
         LooLooHomeContent(
-            isListening = false,
-            onToggleListening = {},
+            microphoneState = MicrophoneUiState.Ready,
+            microphoneAmplitude = 0f,
+            onPrimaryAction = {},
         )
     }
 }
@@ -459,8 +630,9 @@ private fun LooLooHomeScreenPreview() {
 private fun LooLooListeningPreview() {
     OliviaLooiTheme {
         LooLooHomeContent(
-            isListening = true,
-            onToggleListening = {},
+            microphoneState = MicrophoneUiState.Listening,
+            microphoneAmplitude = 0.65f,
+            onPrimaryAction = {},
         )
     }
 }

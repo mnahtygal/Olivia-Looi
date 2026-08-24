@@ -13,4 +13,8 @@
     <string name="looloo_ready_content_description">LooLoo is ready</string>
     <string name="looloo_listening_content_description">LooLoo is listening</string>
     <string name="looloo_avatar_content_description">LooLoo, a smiling magical snow friend</string>
+    <string name="looloo_microphone_permission_message">I need the microphone so I can hear you.</string>
+    <string name="looloo_microphone_permission_help">Ask a grown-up to turn on the microphone in Settings.</string>
+    <string name="looloo_microphone_error_message">I couldn’t hear you. Let’s try again!</string>
+    <string name="looloo_microphone_retry_prompt">Tap to try the microphone again.</string>
 </resources>
