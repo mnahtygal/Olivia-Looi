@@ -13,7 +13,9 @@ import java.nio.charset.StandardCharsets
 import java.security.KeyStore
 import java.security.cert.CertificateFactory
 import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
+import java.util.concurrent.atomic.AtomicReference
 import javax.net.ssl.HttpsURLConnection
 import javax.net.ssl.SSLContext
 import javax.net.ssl.SSLSocketFactory
@@ -34,10 +36,11 @@ internal class AndroidJarvisChatClient(
     private val executor = Executors.newSingleThreadExecutor { task ->
         Thread(task, "looloo-jarvis").apply { isDaemon = true }
     }
+    private val cleanupExecutor = Executors.newSingleThreadExecutor { task ->
+        Thread(task, "looloo-jarvis-cleanup").apply { isDaemon = true }
+    }
     private val generation = AtomicLong(0L)
-
-    @Volatile
-    private var activeConnection: HttpsURLConnection? = null
+    private val activeConnection = AtomicReference<ConnectionHandle?>(null)
 
     @Volatile
     private var isClosed = false
@@ -45,20 +48,22 @@ internal class AndroidJarvisChatClient(
     fun send(prompt: String, onResult: (JarvisChatResult) -> Unit) {
         if (isClosed) return
         val requestGeneration = generation.incrementAndGet()
-        activeConnection?.disconnect()
+        disconnectActiveConnectionAsync()
+        Log.d(TAG, "JARVIS_REQUEST_QUEUED")
 
         executor.execute {
+            Log.d(TAG, "JARVIS_WORKER_STARTED")
             val result = performRequest(prompt, requestGeneration)
-            mainHandler.post {
+            val callbackPosted = mainHandler.post {
                 if (!isClosed && generation.get() == requestGeneration) onResult(result)
             }
+            if (callbackPosted) Log.d(TAG, "JARVIS_CALLBACK_POSTED")
         }
     }
 
     fun cancel() {
         generation.incrementAndGet()
-        activeConnection?.disconnect()
-        activeConnection = null
+        disconnectActiveConnectionAsync()
     }
 
     override fun close() {
@@ -66,6 +71,7 @@ internal class AndroidJarvisChatClient(
         isClosed = true
         cancel()
         executor.shutdownNow()
+        cleanupExecutor.shutdown()
     }
 
     private fun performRequest(prompt: String, requestGeneration: Long): JarvisChatResult {
@@ -99,17 +105,25 @@ internal class AndroidJarvisChatClient(
             Log.w(TAG, "Could not prepare the Jarvis HTTPS connection", error)
             return JarvisChatResult.Failure(JarvisChatFailure.Configuration)
         }
+        Log.d(TAG, "JARVIS_TLS_READY")
 
+        val connectionHandle = ConnectionHandle(connection)
         if (generation.get() != requestGeneration || isClosed) {
-            connection.disconnect()
+            connectionHandle.disconnect()
             return JarvisChatResult.Failure(JarvisChatFailure.Connection)
         }
-        activeConnection = connection
+        activeConnection.set(connectionHandle)
+        if (generation.get() != requestGeneration || isClosed) {
+            activeConnection.compareAndSet(connectionHandle, null)
+            connectionHandle.disconnect()
+            return JarvisChatResult.Failure(JarvisChatFailure.Connection)
+        }
 
         return try {
             val requestBody = serializeJarvisRequest(prompt).toByteArray(StandardCharsets.UTF_8)
             connection.setFixedLengthStreamingMode(requestBody.size)
             connection.outputStream.use { it.write(requestBody) }
+            Log.d(TAG, "JARVIS_CONNECTED")
 
             val statusCode = connection.responseCode
             val responseStream = if (statusCode in 200..299) {
@@ -118,6 +132,7 @@ internal class AndroidJarvisChatClient(
                 connection.errorStream
             }
             val responseBody = responseStream?.use(::readBoundedResponse).orEmpty()
+            Log.d(TAG, "JARVIS_RESPONSE_RECEIVED")
             val result = mapJarvisResponse(statusCode, responseBody)
             if (result is JarvisChatResult.Failure) {
                 Log.w(TAG, "Jarvis request failed: status=$statusCode reason=${result.reason}")
@@ -130,9 +145,15 @@ internal class AndroidJarvisChatClient(
             Log.w(TAG, "Jarvis request could not connect", error)
             JarvisChatResult.Failure(JarvisChatFailure.Connection)
         } finally {
-            if (activeConnection === connection) activeConnection = null
-            connection.disconnect()
+            activeConnection.compareAndSet(connectionHandle, null)
+            connectionHandle.disconnect()
         }
+    }
+
+    private fun disconnectActiveConnectionAsync() {
+        val connectionHandle = activeConnection.getAndSet(null) ?: return
+        // HttpsURLConnection.disconnect() may block on TLS/socket cleanup; never run it on main.
+        cleanupExecutor.execute(connectionHandle::disconnect)
     }
 
     private fun createJarvisSocketFactory(): SSLSocketFactory {
@@ -165,6 +186,14 @@ internal class AndroidJarvisChatClient(
             output.write(buffer, 0, bytesRead)
         }
         return output.toString(StandardCharsets.UTF_8.name())
+    }
+
+    private class ConnectionHandle(private val connection: HttpsURLConnection) {
+        private val isDisconnected = AtomicBoolean(false)
+
+        fun disconnect() {
+            if (isDisconnected.compareAndSet(false, true)) connection.disconnect()
+        }
     }
 
     private companion object {
