@@ -9,7 +9,14 @@
     <string name="looloo_listening">Listening</string>
     <string name="looloo_talk_action">Talk to LooLoo</string>
     <string name="looloo_done_action">I\'m Done</string>
+    <string name="looloo_talk_again_action">Talk Again</string>
+    <string name="looloo_try_again_action">Try Again</string>
     <string name="looloo_listening_prompt">Tap when you’re finished.</string>
+    <string name="looloo_processing_prompt">Just a moment…</string>
+    <string name="looloo_heard_message">I heard you say:</string>
+    <string name="looloo_recognized_speech">“%1$s”</string>
+    <string name="looloo_no_speech_message">I didn’t hear anything. Let’s try again!</string>
+    <string name="looloo_recognition_error_message">I couldn’t understand that. Let’s try again!</string>
     <string name="looloo_ready_content_description">LooLoo is ready</string>
     <string name="looloo_listening_content_description">LooLoo is listening</string>
     <string name="looloo_avatar_content_description">Olivia smiling and holding up two peace signs</string>
@@ -17,6 +24,5 @@
     <string name="looloo_settings_content_description">Open LooLoo settings</string>
     <string name="looloo_microphone_permission_message">I need the microphone so I can hear you.</string>
     <string name="looloo_microphone_permission_help">Ask a grown-up to turn on the microphone in Settings.</string>
-    <string name="looloo_microphone_error_message">I couldn’t hear you. Let’s try again!</string>
     <string name="looloo_microphone_retry_prompt">Tap to try the microphone again.</string>
 </resources>

@@ -72,7 +72,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.nahtygal.olivialooi.R
-import com.nahtygal.olivialooi.audio.MicrophoneCapture
+import com.nahtygal.olivialooi.speech.AndroidSpeechRecognizer
+import com.nahtygal.olivialooi.speech.SpeechRecognitionFailure
 import com.nahtygal.olivialooi.ui.theme.AuroraPurple
 import com.nahtygal.olivialooi.ui.theme.DeepIndigo
 import com.nahtygal.olivialooi.ui.theme.FrostBlue
@@ -83,10 +84,13 @@ import com.nahtygal.olivialooi.ui.theme.SkyBlue
 import com.nahtygal.olivialooi.ui.theme.SnowWhite
 import kotlin.math.ceil
 
-private enum class MicrophoneUiState {
+private enum class HomeSpeechState {
     Ready,
     Starting,
     Listening,
+    Processing,
+    Result,
+    NoSpeech,
     PermissionDenied,
     Error,
 }
@@ -95,53 +99,73 @@ private enum class MicrophoneUiState {
 fun LooLooHomeScreen(modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
-    var microphoneState by remember { mutableStateOf(MicrophoneUiState.Ready) }
+    var speechState by remember { mutableStateOf(HomeSpeechState.Ready) }
     var microphoneAmplitude by remember { mutableFloatStateOf(0f) }
+    var recognizedText by remember { mutableStateOf<String?>(null) }
     var permissionRequestAttempted by rememberSaveable { mutableStateOf(false) }
 
-    val mainExecutor = remember(context) {
-        ContextCompat.getMainExecutor(context.applicationContext)
-    }
-    val microphoneCapture = remember(mainExecutor) {
-        MicrophoneCapture(
-            callbackExecutor = mainExecutor,
-            onStarted = { microphoneState = MicrophoneUiState.Listening },
-            onAmplitude = { microphoneAmplitude = it },
-            onError = {
+    val speechRecognizer = remember(context) {
+        AndroidSpeechRecognizer(
+            context = context.applicationContext,
+            onListening = { speechState = HomeSpeechState.Listening },
+            onProcessing = {
+                if (
+                    speechState == HomeSpeechState.Starting ||
+                    speechState == HomeSpeechState.Listening
+                ) {
+                    speechState = HomeSpeechState.Processing
+                }
+            },
+            onPartialResult = { recognizedText = it },
+            onFinalResult = {
                 microphoneAmplitude = 0f
-                microphoneState = MicrophoneUiState.Error
+                recognizedText = it
+                speechState = HomeSpeechState.Result
+            },
+            onLevelChanged = { microphoneAmplitude = it },
+            onFailure = { failure ->
+                microphoneAmplitude = 0f
+                recognizedText = null
+                speechState = when (failure) {
+                    SpeechRecognitionFailure.NoSpeech -> HomeSpeechState.NoSpeech
+                    SpeechRecognitionFailure.Recognition -> HomeSpeechState.Error
+                }
             },
         )
     }
 
     @SuppressLint("MissingPermission")
-    fun startMicrophone() {
+    fun startSpeechRecognition() {
         microphoneAmplitude = 0f
-        microphoneState = MicrophoneUiState.Starting
-        microphoneCapture.start()
+        recognizedText = null
+        speechState = HomeSpeechState.Starting
+        speechRecognizer.start()
     }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
     ) { granted ->
         if (granted) {
-            startMicrophone()
+            startSpeechRecognition()
         } else {
             microphoneAmplitude = 0f
-            microphoneState = MicrophoneUiState.PermissionDenied
+            recognizedText = null
+            speechState = HomeSpeechState.PermissionDenied
         }
     }
 
-    DisposableEffect(lifecycleOwner, microphoneCapture) {
+    DisposableEffect(lifecycleOwner, speechRecognizer) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_STOP) {
-                microphoneCapture.stop()
+                speechRecognizer.cancel()
                 microphoneAmplitude = 0f
                 if (
-                    microphoneState == MicrophoneUiState.Starting ||
-                    microphoneState == MicrophoneUiState.Listening
+                    speechState == HomeSpeechState.Starting ||
+                    speechState == HomeSpeechState.Listening ||
+                    speechState == HomeSpeechState.Processing
                 ) {
-                    microphoneState = MicrophoneUiState.Ready
+                    recognizedText = null
+                    speechState = HomeSpeechState.Ready
                 }
             }
         }
@@ -149,19 +173,21 @@ fun LooLooHomeScreen(modifier: Modifier = Modifier) {
 
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
-            microphoneCapture.close()
+            speechRecognizer.close()
         }
     }
 
     val onPrimaryAction = {
-        when (microphoneState) {
-            MicrophoneUiState.Listening -> {
-                microphoneCapture.stop()
+        when (speechState) {
+            HomeSpeechState.Listening -> {
+                speechState = HomeSpeechState.Processing
                 microphoneAmplitude = 0f
-                microphoneState = MicrophoneUiState.Ready
+                speechRecognizer.stopListening()
             }
 
-            MicrophoneUiState.Starting -> Unit
+            HomeSpeechState.Starting,
+            HomeSpeechState.Processing,
+            -> Unit
 
             else -> {
                 val hasPermission = ContextCompat.checkSelfPermission(
@@ -170,14 +196,14 @@ fun LooLooHomeScreen(modifier: Modifier = Modifier) {
                 ) == PackageManager.PERMISSION_GRANTED
 
                 when {
-                    hasPermission -> startMicrophone()
+                    hasPermission -> startSpeechRecognition()
                     !permissionRequestAttempted -> {
                         permissionRequestAttempted = true
-                        microphoneState = MicrophoneUiState.Starting
+                        speechState = HomeSpeechState.Starting
                         permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
                     }
 
-                    else -> microphoneState = MicrophoneUiState.PermissionDenied
+                    else -> speechState = HomeSpeechState.PermissionDenied
                 }
             }
         }
@@ -193,8 +219,9 @@ fun LooLooHomeScreen(modifier: Modifier = Modifier) {
     }
 
     LooLooHomeContent(
-        microphoneState = microphoneState,
+        speechState = speechState,
         microphoneAmplitude = microphoneAmplitude,
+        recognizedText = recognizedText,
         onPrimaryAction = onPrimaryAction,
         onSettingsClick = openSettings,
         modifier = modifier,
@@ -203,25 +230,60 @@ fun LooLooHomeScreen(modifier: Modifier = Modifier) {
 
 @Composable
 private fun LooLooHomeContent(
-    microphoneState: MicrophoneUiState,
+    speechState: HomeSpeechState,
     microphoneAmplitude: Float,
+    recognizedText: String?,
     onPrimaryAction: () -> Unit,
     onSettingsClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val childName = stringResource(R.string.child_name_olivia)
-    val isListening = microphoneState == MicrophoneUiState.Listening
-    val greeting = when (microphoneState) {
-        MicrophoneUiState.Listening -> stringResource(R.string.looloo_listening_greeting, childName)
-        MicrophoneUiState.PermissionDenied -> stringResource(R.string.looloo_microphone_permission_message)
-        MicrophoneUiState.Error -> stringResource(R.string.looloo_microphone_error_message)
+    val isListening = speechState == HomeSpeechState.Starting ||
+        speechState == HomeSpeechState.Listening ||
+        speechState == HomeSpeechState.Processing
+    val greeting = when (speechState) {
+        HomeSpeechState.Starting,
+        HomeSpeechState.Listening,
+        HomeSpeechState.Processing,
+        -> stringResource(R.string.looloo_listening_greeting, childName)
+
+        HomeSpeechState.Result -> stringResource(R.string.looloo_heard_message)
+        HomeSpeechState.NoSpeech -> stringResource(R.string.looloo_no_speech_message)
+        HomeSpeechState.PermissionDenied -> stringResource(R.string.looloo_microphone_permission_message)
+        HomeSpeechState.Error -> stringResource(R.string.looloo_recognition_error_message)
         else -> stringResource(R.string.looloo_greeting, childName)
     }
-    val helperText = when (microphoneState) {
-        MicrophoneUiState.Listening -> stringResource(R.string.looloo_listening_prompt)
-        MicrophoneUiState.PermissionDenied -> stringResource(R.string.looloo_microphone_permission_help)
-        MicrophoneUiState.Error -> stringResource(R.string.looloo_microphone_retry_prompt)
+    val helperText = when (speechState) {
+        HomeSpeechState.Starting,
+        HomeSpeechState.Listening,
+        -> stringResource(R.string.looloo_listening_prompt)
+
+        HomeSpeechState.Processing -> stringResource(R.string.looloo_processing_prompt)
+        HomeSpeechState.PermissionDenied -> stringResource(R.string.looloo_microphone_permission_help)
+        HomeSpeechState.NoSpeech,
+        HomeSpeechState.Error,
+        -> stringResource(R.string.looloo_microphone_retry_prompt)
+
         else -> null
+    }
+    val displayedSpeech = recognizedText?.takeIf {
+        speechState == HomeSpeechState.Listening ||
+            speechState == HomeSpeechState.Processing ||
+            speechState == HomeSpeechState.Result
+    }
+    val primaryActionLabel = when (speechState) {
+        HomeSpeechState.Result -> R.string.looloo_talk_again_action
+        HomeSpeechState.NoSpeech,
+        HomeSpeechState.Error,
+        HomeSpeechState.PermissionDenied,
+        -> R.string.looloo_try_again_action
+
+        HomeSpeechState.Starting,
+        HomeSpeechState.Listening,
+        HomeSpeechState.Processing,
+        -> R.string.looloo_done_action
+
+        HomeSpeechState.Ready -> R.string.looloo_talk_action
     }
 
     Box(
@@ -288,11 +350,24 @@ private fun LooLooHomeContent(
                 lineHeight = 32.sp,
                 textAlign = TextAlign.Center,
             )
+            if (displayedSpeech != null) {
+                Text(
+                    text = stringResource(R.string.looloo_recognized_speech, displayedSpeech),
+                    modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                    color = IceBlue,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    lineHeight = 23.sp,
+                    maxLines = 3,
+                    textAlign = TextAlign.Center,
+                )
+            }
             Spacer(modifier = Modifier.height(8.dp))
 
             TalkToLooLooButton(
-                isListening = isListening,
-                enabled = microphoneState != MicrophoneUiState.Starting,
+                labelResource = primaryActionLabel,
+                enabled = speechState != HomeSpeechState.Starting &&
+                    speechState != HomeSpeechState.Processing,
                 onClick = onPrimaryAction,
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -428,7 +503,7 @@ private const val METER_VISIBLE_THRESHOLD = 0.035f
 
 @Composable
 private fun TalkToLooLooButton(
-    isListening: Boolean,
+    labelResource: Int,
     enabled: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -449,9 +524,7 @@ private fun TalkToLooLooButton(
         MicrophoneIcon(modifier = Modifier.size(27.dp))
         Spacer(modifier = Modifier.width(11.dp))
         Text(
-            text = stringResource(
-                if (isListening) R.string.looloo_done_action else R.string.looloo_talk_action,
-            ),
+            text = stringResource(labelResource),
             fontSize = 21.sp,
             fontWeight = FontWeight.ExtraBold,
             lineHeight = 25.sp,
@@ -590,8 +663,9 @@ private fun WinterBackdrop(modifier: Modifier = Modifier) {
 private fun LooLooReadyPreview() {
     OliviaLooiTheme {
         LooLooHomeContent(
-            microphoneState = MicrophoneUiState.Ready,
+            speechState = HomeSpeechState.Ready,
             microphoneAmplitude = 0f,
+            recognizedText = null,
             onPrimaryAction = {},
             onSettingsClick = {},
         )
@@ -609,8 +683,9 @@ private fun LooLooReadyPreview() {
 private fun LooLooListeningPreview() {
     OliviaLooiTheme {
         LooLooHomeContent(
-            microphoneState = MicrophoneUiState.Listening,
+            speechState = HomeSpeechState.Listening,
             microphoneAmplitude = 0.68f,
+            recognizedText = null,
             onPrimaryAction = {},
             onSettingsClick = {},
         )
