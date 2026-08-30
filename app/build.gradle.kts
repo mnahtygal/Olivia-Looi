@@ -1,7 +1,31 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
 }
+
+val localProperties = Properties().apply {
+    val propertiesFile = rootProject.file("local.properties")
+    if (propertiesFile.isFile) propertiesFile.inputStream().use(::load)
+}
+
+fun configuredValue(environmentName: String, propertyName: String, defaultValue: String = "") =
+    providers.environmentVariable(environmentName).orNull
+        ?: localProperties.getProperty(propertyName, defaultValue)
+
+fun String.asBuildConfigString() =
+    "\"${replace("\\", "\\\\").replace("\"", "\\\"")}\""
+
+val jarvisBaseUrl = configuredValue(
+    environmentName = "JARVIS_BASE_URL",
+    propertyName = "jarvis.baseUrl",
+    defaultValue = "https://10.0.0.213",
+)
+val jarvisHandheldToken = configuredValue(
+    environmentName = "JARVIS_HANDHELD_TOKEN",
+    propertyName = "jarvis.handheldToken",
+)
 
 android {
     namespace = "com.nahtygal.olivialooi"
@@ -17,6 +41,12 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField("String", "JARVIS_BASE_URL", jarvisBaseUrl.asBuildConfigString())
+        buildConfigField(
+            "String",
+            "JARVIS_HANDHELD_TOKEN",
+            jarvisHandheldToken.asBuildConfigString(),
+        )
     }
 
     buildTypes {
@@ -32,6 +62,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 

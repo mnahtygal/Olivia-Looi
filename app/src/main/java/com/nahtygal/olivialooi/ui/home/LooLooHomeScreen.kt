@@ -12,6 +12,8 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -72,6 +74,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.nahtygal.olivialooi.R
+import com.nahtygal.olivialooi.network.AndroidJarvisChatClient
+import com.nahtygal.olivialooi.network.JarvisChatResult
 import com.nahtygal.olivialooi.speech.AndroidSpeechRecognizer
 import com.nahtygal.olivialooi.speech.SpeechRecognitionFailure
 import com.nahtygal.olivialooi.ui.theme.AuroraPurple
@@ -89,7 +93,9 @@ private enum class HomeSpeechState {
     Starting,
     Listening,
     Processing,
-    Result,
+    Thinking,
+    Response,
+    NetworkError,
     NoSpeech,
     PermissionDenied,
     Error,
@@ -102,7 +108,30 @@ fun LooLooHomeScreen(modifier: Modifier = Modifier) {
     var speechState by remember { mutableStateOf(HomeSpeechState.Ready) }
     var microphoneAmplitude by remember { mutableFloatStateOf(0f) }
     var recognizedText by remember { mutableStateOf<String?>(null) }
+    var jarvisResponse by remember { mutableStateOf<String?>(null) }
     var permissionRequestAttempted by rememberSaveable { mutableStateOf(false) }
+
+    val jarvisClient = remember(context) {
+        AndroidJarvisChatClient(context.applicationContext)
+    }
+
+    fun sendToJarvis(prompt: String) {
+        jarvisResponse = null
+        speechState = HomeSpeechState.Thinking
+        jarvisClient.send(prompt) { result ->
+            when (result) {
+                is JarvisChatResult.Success -> {
+                    jarvisResponse = result.response
+                    speechState = HomeSpeechState.Response
+                }
+
+                is JarvisChatResult.Failure -> {
+                    jarvisResponse = null
+                    speechState = HomeSpeechState.NetworkError
+                }
+            }
+        }
+    }
 
     val speechRecognizer = remember(context) {
         AndroidSpeechRecognizer(
@@ -120,7 +149,7 @@ fun LooLooHomeScreen(modifier: Modifier = Modifier) {
             onFinalResult = {
                 microphoneAmplitude = 0f
                 recognizedText = it
-                speechState = HomeSpeechState.Result
+                sendToJarvis(it)
             },
             onLevelChanged = { microphoneAmplitude = it },
             onFailure = { failure ->
@@ -136,8 +165,10 @@ fun LooLooHomeScreen(modifier: Modifier = Modifier) {
 
     @SuppressLint("MissingPermission")
     fun startSpeechRecognition() {
+        jarvisClient.cancel()
         microphoneAmplitude = 0f
         recognizedText = null
+        jarvisResponse = null
         speechState = HomeSpeechState.Starting
         speechRecognizer.start()
     }
@@ -154,17 +185,20 @@ fun LooLooHomeScreen(modifier: Modifier = Modifier) {
         }
     }
 
-    DisposableEffect(lifecycleOwner, speechRecognizer) {
+    DisposableEffect(lifecycleOwner, speechRecognizer, jarvisClient) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_STOP) {
                 speechRecognizer.cancel()
+                jarvisClient.cancel()
                 microphoneAmplitude = 0f
                 if (
                     speechState == HomeSpeechState.Starting ||
                     speechState == HomeSpeechState.Listening ||
-                    speechState == HomeSpeechState.Processing
+                    speechState == HomeSpeechState.Processing ||
+                    speechState == HomeSpeechState.Thinking
                 ) {
                     recognizedText = null
+                    jarvisResponse = null
                     speechState = HomeSpeechState.Ready
                 }
             }
@@ -174,6 +208,7 @@ fun LooLooHomeScreen(modifier: Modifier = Modifier) {
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
             speechRecognizer.close()
+            jarvisClient.close()
         }
     }
 
@@ -187,7 +222,13 @@ fun LooLooHomeScreen(modifier: Modifier = Modifier) {
 
             HomeSpeechState.Starting,
             HomeSpeechState.Processing,
+            HomeSpeechState.Thinking,
             -> Unit
+
+            HomeSpeechState.NetworkError -> {
+                recognizedText?.let(::sendToJarvis)
+                Unit
+            }
 
             else -> {
                 val hasPermission = ContextCompat.checkSelfPermission(
@@ -222,6 +263,7 @@ fun LooLooHomeScreen(modifier: Modifier = Modifier) {
         speechState = speechState,
         microphoneAmplitude = microphoneAmplitude,
         recognizedText = recognizedText,
+        jarvisResponse = jarvisResponse,
         onPrimaryAction = onPrimaryAction,
         onSettingsClick = openSettings,
         modifier = modifier,
@@ -233,6 +275,7 @@ private fun LooLooHomeContent(
     speechState: HomeSpeechState,
     microphoneAmplitude: Float,
     recognizedText: String?,
+    jarvisResponse: String?,
     onPrimaryAction: () -> Unit,
     onSettingsClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -247,7 +290,9 @@ private fun LooLooHomeContent(
         HomeSpeechState.Processing,
         -> stringResource(R.string.looloo_listening_greeting, childName)
 
-        HomeSpeechState.Result -> stringResource(R.string.looloo_heard_message)
+        HomeSpeechState.Thinking -> stringResource(R.string.looloo_thinking_message)
+        HomeSpeechState.Response -> stringResource(R.string.looloo_response_label)
+        HomeSpeechState.NetworkError -> stringResource(R.string.looloo_network_error_message)
         HomeSpeechState.NoSpeech -> stringResource(R.string.looloo_no_speech_message)
         HomeSpeechState.PermissionDenied -> stringResource(R.string.looloo_microphone_permission_message)
         HomeSpeechState.Error -> stringResource(R.string.looloo_recognition_error_message)
@@ -259,6 +304,7 @@ private fun LooLooHomeContent(
         -> stringResource(R.string.looloo_listening_prompt)
 
         HomeSpeechState.Processing -> stringResource(R.string.looloo_processing_prompt)
+        HomeSpeechState.NetworkError -> stringResource(R.string.looloo_network_retry_prompt)
         HomeSpeechState.PermissionDenied -> stringResource(R.string.looloo_microphone_permission_help)
         HomeSpeechState.NoSpeech,
         HomeSpeechState.Error,
@@ -266,13 +312,23 @@ private fun LooLooHomeContent(
 
         else -> null
     }
-    val displayedSpeech = recognizedText?.takeIf {
-        speechState == HomeSpeechState.Listening ||
-            speechState == HomeSpeechState.Processing ||
-            speechState == HomeSpeechState.Result
+    val displayedSpeech = recognizedText?.let { speech ->
+        when (speechState) {
+            HomeSpeechState.Listening,
+            HomeSpeechState.Processing,
+            -> stringResource(R.string.looloo_recognized_speech, speech)
+
+            HomeSpeechState.Thinking,
+            HomeSpeechState.Response,
+            HomeSpeechState.NetworkError,
+            -> stringResource(R.string.looloo_child_said, childName, speech)
+
+            else -> null
+        }
     }
     val primaryActionLabel = when (speechState) {
-        HomeSpeechState.Result -> R.string.looloo_talk_again_action
+        HomeSpeechState.Response -> R.string.looloo_talk_again_action
+        HomeSpeechState.NetworkError -> R.string.looloo_try_again_action
         HomeSpeechState.NoSpeech,
         HomeSpeechState.Error,
         HomeSpeechState.PermissionDenied,
@@ -283,6 +339,7 @@ private fun LooLooHomeContent(
         HomeSpeechState.Processing,
         -> R.string.looloo_done_action
 
+        HomeSpeechState.Thinking,
         HomeSpeechState.Ready -> R.string.looloo_talk_action
     }
 
@@ -352,7 +409,7 @@ private fun LooLooHomeContent(
             )
             if (displayedSpeech != null) {
                 Text(
-                    text = stringResource(R.string.looloo_recognized_speech, displayedSpeech),
+                    text = displayedSpeech,
                     modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
                     color = IceBlue,
                     fontSize = 18.sp,
@@ -362,12 +419,28 @@ private fun LooLooHomeContent(
                     textAlign = TextAlign.Center,
                 )
             }
+            if (speechState == HomeSpeechState.Response && jarvisResponse != null) {
+                Spacer(modifier = Modifier.height(3.dp))
+                Text(
+                    text = jarvisResponse,
+                    modifier = Modifier
+                        .heightIn(max = 96.dp)
+                        .verticalScroll(rememberScrollState())
+                        .semantics { liveRegion = LiveRegionMode.Polite },
+                    color = SnowWhite,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    lineHeight = 23.sp,
+                    textAlign = TextAlign.Center,
+                )
+            }
             Spacer(modifier = Modifier.height(8.dp))
 
             TalkToLooLooButton(
                 labelResource = primaryActionLabel,
                 enabled = speechState != HomeSpeechState.Starting &&
-                    speechState != HomeSpeechState.Processing,
+                    speechState != HomeSpeechState.Processing &&
+                    speechState != HomeSpeechState.Thinking,
                 onClick = onPrimaryAction,
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -375,6 +448,7 @@ private fun LooLooHomeContent(
 
             LooLooStatus(
                 isListening = isListening,
+                isThinking = speechState == HomeSpeechState.Thinking,
                 microphoneAmplitude = microphoneAmplitude,
             )
 
@@ -413,15 +487,23 @@ private const val LOOLOO_IMAGE_ASPECT_RATIO = 1199f / 1312f
 @Composable
 private fun LooLooStatus(
     isListening: Boolean,
+    isThinking: Boolean,
     microphoneAmplitude: Float,
     modifier: Modifier = Modifier,
 ) {
     val statusLabel = stringResource(
-        if (isListening) R.string.looloo_listening else R.string.looloo_ready,
+        when {
+            isThinking -> R.string.looloo_thinking
+            isListening -> R.string.looloo_listening
+            else -> R.string.looloo_ready
+        },
     )
     val statusDescription = stringResource(
-        if (isListening) R.string.looloo_listening_content_description
-        else R.string.looloo_ready_content_description,
+        when {
+            isThinking -> R.string.looloo_thinking_content_description
+            isListening -> R.string.looloo_listening_content_description
+            else -> R.string.looloo_ready_content_description
+        },
     )
 
     Column(
@@ -666,6 +748,7 @@ private fun LooLooReadyPreview() {
             speechState = HomeSpeechState.Ready,
             microphoneAmplitude = 0f,
             recognizedText = null,
+            jarvisResponse = null,
             onPrimaryAction = {},
             onSettingsClick = {},
         )
@@ -686,6 +769,7 @@ private fun LooLooListeningPreview() {
             speechState = HomeSpeechState.Listening,
             microphoneAmplitude = 0.68f,
             recognizedText = null,
+            jarvisResponse = null,
             onPrimaryAction = {},
             onSettingsClick = {},
         )
