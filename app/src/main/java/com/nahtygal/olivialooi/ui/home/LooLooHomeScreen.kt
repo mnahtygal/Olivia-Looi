@@ -77,6 +77,7 @@ import com.nahtygal.olivialooi.R
 import com.nahtygal.olivialooi.network.AndroidJarvisChatClient
 import com.nahtygal.olivialooi.network.JarvisChatResult
 import com.nahtygal.olivialooi.speech.AndroidSpeechRecognizer
+import com.nahtygal.olivialooi.speech.AndroidTextToSpeech
 import com.nahtygal.olivialooi.speech.SpeechRecognitionFailure
 import com.nahtygal.olivialooi.ui.theme.AuroraPurple
 import com.nahtygal.olivialooi.ui.theme.DeepIndigo
@@ -114,6 +115,9 @@ fun LooLooHomeScreen(modifier: Modifier = Modifier) {
     val jarvisClient = remember(context) {
         AndroidJarvisChatClient(context.applicationContext)
     }
+    val textToSpeech = remember(context) {
+        AndroidTextToSpeech(context.applicationContext)
+    }
 
     fun sendToJarvis(prompt: String) {
         jarvisResponse = null
@@ -123,6 +127,7 @@ fun LooLooHomeScreen(modifier: Modifier = Modifier) {
                 is JarvisChatResult.Success -> {
                     jarvisResponse = result.response
                     speechState = HomeSpeechState.Response
+                    textToSpeech.speak(result.response)
                 }
 
                 is JarvisChatResult.Failure -> {
@@ -165,6 +170,7 @@ fun LooLooHomeScreen(modifier: Modifier = Modifier) {
 
     @SuppressLint("MissingPermission")
     fun startSpeechRecognition() {
+        textToSpeech.stop()
         jarvisClient.cancel()
         microphoneAmplitude = 0f
         recognizedText = null
@@ -185,11 +191,12 @@ fun LooLooHomeScreen(modifier: Modifier = Modifier) {
         }
     }
 
-    DisposableEffect(lifecycleOwner, speechRecognizer, jarvisClient) {
+    DisposableEffect(lifecycleOwner, speechRecognizer, jarvisClient, textToSpeech) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_STOP) {
                 speechRecognizer.cancel()
                 jarvisClient.cancel()
+                textToSpeech.stop()
                 microphoneAmplitude = 0f
                 if (
                     speechState == HomeSpeechState.Starting ||
@@ -209,6 +216,7 @@ fun LooLooHomeScreen(modifier: Modifier = Modifier) {
             lifecycleOwner.lifecycle.removeObserver(observer)
             speechRecognizer.close()
             jarvisClient.close()
+            textToSpeech.close()
         }
     }
 
