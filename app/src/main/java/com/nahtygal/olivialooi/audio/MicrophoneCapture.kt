@@ -11,6 +11,7 @@ import java.util.concurrent.Executors
 import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
+import kotlin.math.log10
 import kotlin.math.sqrt
 
 /**
@@ -111,8 +112,12 @@ class MicrophoneCapture(
                 if (sampleCount < 0) throw IllegalStateException("AudioRecord read failed: $sampleCount")
                 if (sampleCount == 0) continue
 
-                val amplitude = calculateAmplitude(samples, sampleCount)
-                smoothedAmplitude = smoothedAmplitude * 0.7f + amplitude * 0.3f
+                val amplitude = pcm16RmsToLevel(samples, sampleCount)
+                val smoothing = if (amplitude > smoothedAmplitude) ATTACK_SMOOTHING else RELEASE_SMOOTHING
+                smoothedAmplitude += (amplitude - smoothedAmplitude) * smoothing
+                if (amplitude == 0f && smoothedAmplitude < ZERO_SNAP_LEVEL) {
+                    smoothedAmplitude = 0f
+                }
 
                 val now = System.nanoTime()
                 if (now - lastAmplitudeUpdateNanos >= AMPLITUDE_UPDATE_INTERVAL_NANOS) {
@@ -171,22 +176,40 @@ class MicrophoneCapture(
         }
     }
 
-    private fun calculateAmplitude(samples: ShortArray, sampleCount: Int): Float {
-        var sumOfSquares = 0.0
-        for (index in 0 until sampleCount) {
-            val sample = samples[index].toDouble()
-            sumOfSquares += sample * sample
-        }
-
-        val rootMeanSquare = sqrt(sumOfSquares / sampleCount)
-        return (rootMeanSquare / AMPLITUDE_SCALE).toFloat().coerceIn(0f, 1f)
-    }
-
     private companion object {
         const val SAMPLE_RATE_HZ = 16_000
         const val SAMPLES_PER_READ = 320
         const val READ_BUFFER_BYTES = SAMPLES_PER_READ * 2
-        const val AMPLITUDE_SCALE = 8_000.0
         const val AMPLITUDE_UPDATE_INTERVAL_NANOS = 80_000_000L
+        const val ATTACK_SMOOTHING = 0.55f
+        const val RELEASE_SMOOTHING = 0.18f
+        const val ZERO_SNAP_LEVEL = 0.015f
     }
 }
+
+/** Maps PCM16 RMS onto a useful speech meter range without retaining any audio samples. */
+internal fun pcm16RmsToLevel(samples: ShortArray, sampleCount: Int): Float {
+    if (sampleCount <= 0) return 0f
+
+    val usedSampleCount = sampleCount.coerceAtMost(samples.size)
+    if (usedSampleCount == 0) return 0f
+
+    var sumOfSquares = 0.0
+    for (index in 0 until usedSampleCount) {
+        val sample = samples[index].toDouble()
+        sumOfSquares += sample * sample
+    }
+
+    val rootMeanSquare = sqrt(sumOfSquares / usedSampleCount)
+    if (rootMeanSquare <= SILENCE_RMS) return 0f
+
+    val decibelsFromFullScale = 20.0 * log10(rootMeanSquare / PCM16_FULL_SCALE)
+    return ((decibelsFromFullScale - METER_FLOOR_DB) / (METER_CEILING_DB - METER_FLOOR_DB))
+        .toFloat()
+        .coerceIn(0f, 1f)
+}
+
+private const val PCM16_FULL_SCALE = 32_768.0
+private const val SILENCE_RMS = 48.0
+private const val METER_FLOOR_DB = -55.0
+private const val METER_CEILING_DB = -8.0
