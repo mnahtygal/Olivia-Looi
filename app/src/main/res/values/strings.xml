@@ -31,4 +31,47 @@
     <string name="looloo_microphone_permission_message">I need the microphone so I can hear you.</string>
     <string name="looloo_microphone_permission_help">Ask a grown-up to turn on the microphone in Settings.</string>
     <string name="looloo_microphone_retry_prompt">Tap to try the microphone again.</string>
+    <string name="games_action">Games</string>
+    <string name="games_heading">Games</string>
+    <string name="games_subtitle">What would you like to play?</string>
+    <string name="tic_tac_toe_name">Tic-Tac-Toe</string>
+    <string name="tic_tac_toe_card_subtitle">Three in a row wins!</string>
+    <string name="back_to_home">Back to Home</string>
+    <string name="home_action">Home</string>
+
+    <string name="tic_tac_toe_mode_heading">Who would you like to play with?</string>
+    <string name="tic_tac_toe_mode_subtitle">Choose your Tic-Tac-Toe game mode</string>
+    <string name="play_with_uncle_moo">Play with Uncle Moo</string>
+    <string name="play_with_uncle_moo_subtitle">Play with Olivia\'s Uncle Moo!</string>
+    <string name="play_with_looloo">Play with LooLoo</string>
+    <string name="play_with_looloo_subtitle">Play against LooLoo!</string>
+    <string name="open_game_mode_symbol">›</string>
+
+    <string name="tic_tac_toe_players_uncle_moo">Olivia is X  •  Uncle Moo is O</string>
+    <string name="tic_tac_toe_players_looloo">Olivia is X  •  LooLoo is O</string>
+    <string name="olivia_turn">Olivia\'s turn!</string>
+    <string name="uncle_moo_turn">Uncle Moo\'s turn!</string>
+    <string name="looloo_turn">LooLoo\'s turn!</string>
+    <string name="olivia_wins">Olivia wins! 🎉</string>
+    <string name="uncle_moo_wins">Uncle Moo wins! 🎉</string>
+    <string name="looloo_wins">LooLoo wins! 🎉</string>
+    <string name="tic_tac_toe_draw">It\'s a tie! Great game!</string>
+    <string name="play_again">Play Again</string>
+    <string name="change_players_game_mode">Change Players / Game Mode</string>
+    <string name="difficulty_easy">Easy</string>
+    <string name="difficulty_smart">Smart</string>
+
+    <string name="board_cell_description">%1$s, %2$s</string>
+    <string name="board_cell_empty">empty</string>
+    <string name="board_cell_x">X</string>
+    <string name="board_cell_o">O</string>
+    <string name="board_position_top_left">Top left</string>
+    <string name="board_position_top_center">Top center</string>
+    <string name="board_position_top_right">Top right</string>
+    <string name="board_position_middle_left">Middle left</string>
+    <string name="board_position_center">Center</string>
+    <string name="board_position_middle_right">Middle right</string>
+    <string name="board_position_bottom_left">Bottom left</string>
+    <string name="board_position_bottom_center">Bottom center</string>
+    <string name="board_position_bottom_right">Bottom right</string>
 </resources>

@@ -103,7 +103,10 @@ private enum class HomeSpeechState {
 }
 
 @Composable
-fun LooLooHomeScreen(modifier: Modifier = Modifier) {
+fun LooLooHomeScreen(
+    onGamesClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     var speechState by remember { mutableStateOf(HomeSpeechState.Ready) }
@@ -267,6 +270,17 @@ fun LooLooHomeScreen(modifier: Modifier = Modifier) {
         )
     }
 
+    val openGames = {
+        speechRecognizer.cancel()
+        jarvisClient.cancel()
+        textToSpeech.stop()
+        microphoneAmplitude = 0f
+        recognizedText = null
+        jarvisResponse = null
+        speechState = HomeSpeechState.Ready
+        onGamesClick()
+    }
+
     LooLooHomeContent(
         speechState = speechState,
         microphoneAmplitude = microphoneAmplitude,
@@ -274,6 +288,7 @@ fun LooLooHomeScreen(modifier: Modifier = Modifier) {
         jarvisResponse = jarvisResponse,
         onPrimaryAction = onPrimaryAction,
         onSettingsClick = openSettings,
+        onGamesClick = openGames,
         modifier = modifier,
     )
 }
@@ -286,6 +301,7 @@ private fun LooLooHomeContent(
     jarvisResponse: String?,
     onPrimaryAction: () -> Unit,
     onSettingsClick: () -> Unit,
+    onGamesClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val childName = stringResource(R.string.child_name_olivia)
@@ -472,7 +488,13 @@ private fun LooLooHomeContent(
                 )
             }
 
-            SettingsButton(onClick = onSettingsClick)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                GamesButton(onClick = onGamesClick)
+                Spacer(modifier = Modifier.width(6.dp))
+                SettingsButton(onClick = onSettingsClick)
+            }
         }
     }
 }
@@ -698,6 +720,59 @@ private fun SettingsButton(onClick: () -> Unit) {
 }
 
 @Composable
+private fun GamesButton(onClick: () -> Unit) {
+    Button(
+        onClick = onClick,
+        modifier = Modifier.heightIn(min = 52.dp),
+        shape = RoundedCornerShape(24.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = SnowWhite.copy(alpha = 0.92f),
+            contentColor = DeepIndigo,
+        ),
+    ) {
+        TicTacToeMiniIcon(modifier = Modifier.size(25.dp))
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = stringResource(R.string.games_action),
+            fontSize = 18.sp,
+            fontWeight = FontWeight.ExtraBold,
+        )
+    }
+}
+
+@Composable
+private fun TicTacToeMiniIcon(modifier: Modifier = Modifier) {
+    Canvas(modifier = modifier) {
+        val stroke = 2.dp.toPx()
+        for (third in 1..2) {
+            val offset = size.width * third / 3f
+            drawLine(DeepIndigo, Offset(offset, 0f), Offset(offset, size.height), stroke)
+            drawLine(DeepIndigo, Offset(0f, offset), Offset(size.width, offset), stroke)
+        }
+        drawLine(
+            DeepIndigo,
+            Offset(size.width * 0.08f, size.height * 0.08f),
+            Offset(size.width * 0.25f, size.height * 0.25f),
+            stroke,
+            cap = StrokeCap.Round,
+        )
+        drawLine(
+            DeepIndigo,
+            Offset(size.width * 0.25f, size.height * 0.08f),
+            Offset(size.width * 0.08f, size.height * 0.25f),
+            stroke,
+            cap = StrokeCap.Round,
+        )
+        drawCircle(
+            DeepIndigo,
+            radius = size.width * 0.09f,
+            center = Offset(size.width * 0.83f, size.height * 0.5f),
+            style = Stroke(stroke),
+        )
+    }
+}
+
+@Composable
 private fun WinterBackdrop(modifier: Modifier = Modifier) {
     Canvas(modifier = modifier) {
         drawCircle(
@@ -759,6 +834,7 @@ private fun LooLooReadyPreview() {
             jarvisResponse = null,
             onPrimaryAction = {},
             onSettingsClick = {},
+            onGamesClick = {},
         )
     }
 }
@@ -780,6 +856,7 @@ private fun LooLooListeningPreview() {
             jarvisResponse = null,
             onPrimaryAction = {},
             onSettingsClick = {},
+            onGamesClick = {},
         )
     }
 }
