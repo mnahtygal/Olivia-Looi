@@ -32,6 +32,16 @@
     <string name="looloo_microphone_permission_help">Ask a grown-up to turn on the microphone in Settings.</string>
     <string name="looloo_microphone_retry_prompt">Tap to try the microphone again.</string>
     <string name="games_action">Games</string>
+    <string name="apps_action">Apps</string>
+    <string name="apps_heading">Apps</string>
+    <string name="apps_subtitle">What would you like to do?</string>
+    <string name="youtube_kids_name">YouTube Kids</string>
+    <string name="disney_plus_name">Disney+</string>
+    <string name="open_youtube_kids_description">Open YouTube Kids</string>
+    <string name="open_disney_plus_description">Open Disney+</string>
+    <string name="app_not_ready_message">This app isn\'t ready yet.</string>
+    <string name="app_not_ready_help">Let\'s choose something else to do!</string>
+    <string name="back_to_apps">Back to Apps</string>
     <string name="games_heading">Games</string>
     <string name="games_subtitle">What would you like to play?</string>
     <string name="tic_tac_toe_name">Tic-Tac-Toe</string>

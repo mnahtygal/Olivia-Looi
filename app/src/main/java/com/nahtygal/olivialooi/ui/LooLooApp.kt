@@ -4,9 +4,14 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
+import com.nahtygal.olivialooi.apps.KidAppLaunchResult
+import com.nahtygal.olivialooi.apps.KidAppLauncher
 import com.nahtygal.olivialooi.games.tictactoe.TicTacToeGameMode
+import com.nahtygal.olivialooi.ui.apps.AppsScreen
 import com.nahtygal.olivialooi.ui.games.GamesScreen
 import com.nahtygal.olivialooi.ui.games.tictactoe.TicTacToeGameScreen
 import com.nahtygal.olivialooi.ui.games.tictactoe.TicTacToeModeScreen
@@ -14,6 +19,7 @@ import com.nahtygal.olivialooi.ui.home.LooLooHomeScreen
 
 private enum class LooLooScreen {
     Home,
+    Apps,
     Games,
     TicTacToeMode,
     TicTacToeGame,
@@ -21,6 +27,8 @@ private enum class LooLooScreen {
 
 @Composable
 fun LooLooApp() {
+    val context = LocalContext.current
+    val kidAppLauncher = remember(context) { KidAppLauncher(context) }
     var screenName by rememberSaveable { mutableStateOf(LooLooScreen.Home.name) }
     var gameModeName by rememberSaveable {
         mutableStateOf(TicTacToeGameMode.PersonVsPerson.name)
@@ -38,6 +46,7 @@ fun LooLooApp() {
                 LooLooScreen.TicTacToeGame -> LooLooScreen.TicTacToeMode
                 LooLooScreen.TicTacToeMode -> LooLooScreen.Games
                 LooLooScreen.Games -> LooLooScreen.Home
+                LooLooScreen.Apps -> LooLooScreen.Home
                 LooLooScreen.Home -> LooLooScreen.Home
             },
         )
@@ -46,6 +55,14 @@ fun LooLooApp() {
     when (screen) {
         LooLooScreen.Home -> LooLooHomeScreen(
             onGamesClick = { navigateTo(LooLooScreen.Games) },
+            onAppsClick = { navigateTo(LooLooScreen.Apps) },
+        )
+
+        LooLooScreen.Apps -> AppsScreen(
+            onLaunchApp = { app ->
+                kidAppLauncher.launch(app) == KidAppLaunchResult.Launched
+            },
+            onHomeClick = { navigateTo(LooLooScreen.Home) },
         )
 
         LooLooScreen.Games -> GamesScreen(

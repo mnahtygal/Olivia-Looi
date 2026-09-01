@@ -6,6 +6,8 @@
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
     <queries>
+        <package android:name="com.google.android.apps.youtube.kids" />
+        <package android:name="com.disney.disneyplus" />
         <intent>
             <action android:name="android.speech.RecognitionService" />
         </intent>

@@ -16,6 +16,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -105,6 +106,7 @@ private enum class HomeSpeechState {
 @Composable
 fun LooLooHomeScreen(
     onGamesClick: () -> Unit,
+    onAppsClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -270,7 +272,7 @@ fun LooLooHomeScreen(
         )
     }
 
-    val openGames = {
+    fun leaveHome(destination: () -> Unit) {
         speechRecognizer.cancel()
         jarvisClient.cancel()
         textToSpeech.stop()
@@ -278,8 +280,11 @@ fun LooLooHomeScreen(
         recognizedText = null
         jarvisResponse = null
         speechState = HomeSpeechState.Ready
-        onGamesClick()
+        destination()
     }
+
+    val openGames = { leaveHome(onGamesClick) }
+    val openApps = { leaveHome(onAppsClick) }
 
     LooLooHomeContent(
         speechState = speechState,
@@ -289,6 +294,7 @@ fun LooLooHomeScreen(
         onPrimaryAction = onPrimaryAction,
         onSettingsClick = openSettings,
         onGamesClick = openGames,
+        onAppsClick = openApps,
         modifier = modifier,
     )
 }
@@ -302,6 +308,7 @@ private fun LooLooHomeContent(
     onPrimaryAction: () -> Unit,
     onSettingsClick: () -> Unit,
     onGamesClick: () -> Unit,
+    onAppsClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val childName = stringResource(R.string.child_name_olivia)
@@ -492,6 +499,8 @@ private fun LooLooHomeContent(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 GamesButton(onClick = onGamesClick)
+                Spacer(modifier = Modifier.width(6.dp))
+                AppsButton(onClick = onAppsClick)
                 Spacer(modifier = Modifier.width(6.dp))
                 SettingsButton(onClick = onSettingsClick)
             }
@@ -729,6 +738,7 @@ private fun GamesButton(onClick: () -> Unit) {
             containerColor = SnowWhite.copy(alpha = 0.92f),
             contentColor = DeepIndigo,
         ),
+        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
     ) {
         TicTacToeMiniIcon(modifier = Modifier.size(25.dp))
         Spacer(modifier = Modifier.width(8.dp))
@@ -737,6 +747,50 @@ private fun GamesButton(onClick: () -> Unit) {
             fontSize = 18.sp,
             fontWeight = FontWeight.ExtraBold,
         )
+    }
+}
+
+@Composable
+private fun AppsButton(onClick: () -> Unit) {
+    Button(
+        onClick = onClick,
+        modifier = Modifier.heightIn(min = 52.dp),
+        shape = RoundedCornerShape(24.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = SnowWhite.copy(alpha = 0.92f),
+            contentColor = DeepIndigo,
+        ),
+        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
+    ) {
+        AppsMiniIcon(modifier = Modifier.size(25.dp))
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = stringResource(R.string.apps_action),
+            fontSize = 18.sp,
+            fontWeight = FontWeight.ExtraBold,
+        )
+    }
+}
+
+@Composable
+private fun AppsMiniIcon(modifier: Modifier = Modifier) {
+    Canvas(modifier = modifier) {
+        val squareSize = size.minDimension * 0.35f
+        val gap = size.minDimension * 0.16f
+        val corner = CornerRadius(size.minDimension * 0.08f)
+        listOf(
+            Offset(0f, 0f),
+            Offset(squareSize + gap, 0f),
+            Offset(0f, squareSize + gap),
+            Offset(squareSize + gap, squareSize + gap),
+        ).forEach { topLeft ->
+            drawRoundRect(
+                color = DeepIndigo,
+                topLeft = topLeft,
+                size = Size(squareSize, squareSize),
+                cornerRadius = corner,
+            )
+        }
     }
 }
 
@@ -835,6 +889,7 @@ private fun LooLooReadyPreview() {
             onPrimaryAction = {},
             onSettingsClick = {},
             onGamesClick = {},
+            onAppsClick = {},
         )
     }
 }
@@ -857,6 +912,7 @@ private fun LooLooListeningPreview() {
             onPrimaryAction = {},
             onSettingsClick = {},
             onGamesClick = {},
+            onAppsClick = {},
         )
     }
 }
