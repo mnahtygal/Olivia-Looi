@@ -2,6 +2,7 @@ package com.nahtygal.olivialooi.speech
 
 import android.content.Context
 import android.speech.tts.TextToSpeech
+import android.speech.tts.Voice
 import android.util.Log
 import java.util.Locale
 import java.util.concurrent.Executors
@@ -10,7 +11,10 @@ import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
 
 /** Owns LooLoo's platform TextToSpeech engine and its bounded pending response. */
-internal class AndroidTextToSpeech(context: Context) : AutoCloseable {
+internal class AndroidTextToSpeech(
+    context: Context,
+    private val preferredVoiceName: String? = null,
+) : AutoCloseable {
     private val applicationContext = context.applicationContext
     private val pendingSpeech = PendingSpeechQueue()
     private val isClosed = AtomicBoolean(false)
@@ -96,6 +100,8 @@ internal class AndroidTextToSpeech(context: Context) : AutoCloseable {
             return
         }
 
+        discoverAndSelectVoice(engine)
+
         if (safely { engine.setSpeechRate(SPEECH_RATE) } == TextToSpeech.ERROR) {
             logError("speech_rate")
         }
@@ -105,6 +111,52 @@ internal class AndroidTextToSpeech(context: Context) : AutoCloseable {
 
         Log.d(TAG, "LOOLOO_TTS_READY")
         pendingSpeech.markReady()?.let(::speakIfCurrent)
+    }
+
+    private fun discoverAndSelectVoice(engine: TextToSpeech) {
+        val engineName = safely { engine.defaultEngine }.orEmpty().ifBlank { "unknown" }
+        Log.d(TAG, "LOOLOO_TTS_ENGINE package=$engineName")
+
+        val androidVoices = safely { engine.voices }.orEmpty().sortedBy(Voice::getName)
+        val candidates = androidVoices.map { voice ->
+            LooLooVoiceCandidate(
+                name = voice.name,
+                locale = voice.locale,
+                quality = voice.quality,
+                latency = voice.latency,
+                requiresNetwork = voice.isNetworkConnectionRequired,
+                features = voice.features.orEmpty(),
+            ).also(::logAvailableVoice)
+        }
+        val selected = LooLooVoiceSelector.select(candidates, preferredVoiceName)
+        if (selected == null) {
+            Log.d(TAG, "LOOLOO_TTS_FALLBACK reason=no_english_voice")
+            return
+        }
+
+        val selectedVoice = androidVoices.firstOrNull { it.name == selected.name }
+        val selectionResult = selectedVoice?.let { safely { engine.setVoice(it) } }
+        if (selectionResult == TextToSpeech.SUCCESS) {
+            val reason = if (selected.name == preferredVoiceName?.trim()) "preferred" else "ranked"
+            Log.d(
+                TAG,
+                "LOOLOO_TTS_SELECTED name=${selected.name} " +
+                    "locale=${selected.locale.toLanguageTag()} local=${!selected.requiresNetwork} " +
+                    "quality=${selected.quality} latency=${selected.latency} reason=$reason",
+            )
+        } else {
+            Log.d(TAG, "LOOLOO_TTS_FALLBACK reason=set_voice_failed name=${selected.name}")
+        }
+    }
+
+    private fun logAvailableVoice(voice: LooLooVoiceCandidate) {
+        val features = voice.features.sorted().joinToString(",").ifBlank { "none" }
+        Log.d(
+            TAG,
+            "LOOLOO_TTS_VOICE_AVAILABLE name=${voice.name} " +
+                "locale=${voice.locale.toLanguageTag()} quality=${voice.quality} " +
+                "latency=${voice.latency} network=${voice.requiresNetwork} features=$features",
+        )
     }
 
     private fun speakIfCurrent(request: SpeechRequest) {

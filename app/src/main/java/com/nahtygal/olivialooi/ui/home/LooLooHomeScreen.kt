@@ -75,6 +75,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.nahtygal.olivialooi.R
+import com.nahtygal.olivialooi.brain.LooLooKidBrain
 import com.nahtygal.olivialooi.network.AndroidJarvisChatClient
 import com.nahtygal.olivialooi.network.JarvisChatResult
 import com.nahtygal.olivialooi.speech.AndroidSpeechRecognizer
@@ -123,8 +124,16 @@ fun LooLooHomeScreen(
     val textToSpeech = remember(context) {
         AndroidTextToSpeech(context.applicationContext)
     }
+    val kidBrain = remember { LooLooKidBrain() }
 
-    fun sendToJarvis(prompt: String) {
+    fun sendToJarvis(childMessage: String) {
+        val prompt = kidBrain.buildPrompt(childMessage)
+        if (prompt == null) {
+            recognizedText = null
+            jarvisResponse = null
+            speechState = HomeSpeechState.NoSpeech
+            return
+        }
         jarvisResponse = null
         speechState = HomeSpeechState.Thinking
         jarvisClient.send(prompt) { result ->
