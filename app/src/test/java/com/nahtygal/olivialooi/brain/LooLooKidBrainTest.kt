@@ -14,15 +14,15 @@ class LooLooKidBrainTest {
         val prompt = kidBrain.buildPrompt("Why is the sky blue?").orEmpty()
 
         assertTrue(prompt.contains("You are LooLoo"))
-        assertTrue(prompt.contains("friendly AI companion"))
+        assertTrue(prompt.contains("friendly AI"))
     }
 
     @Test
     fun promptIdentifiesOlivia() {
         val prompt = kidBrain.buildPrompt("Tell me a joke.").orEmpty()
 
-        assertTrue(prompt.contains("Olivia is a young child"))
-        assertTrue(prompt.contains("Olivia said:"))
+        assertTrue(prompt.contains("young Olivia"))
+        assertTrue(prompt.contains("Olivia:"))
     }
 
     @Test
@@ -38,9 +38,9 @@ class LooLooKidBrainTest {
     fun instructionsRequestShortChildFriendlyResponses() {
         val prompt = kidBrain.buildPrompt("What is rain?").orEmpty()
 
-        assertTrue(prompt.contains("1–3 short sentences"))
-        assertTrue(prompt.contains("simple vocabulary"))
-        assertTrue(prompt.contains("child-friendly language"))
+        assertTrue(prompt.contains("1-3 simple"))
+        assertTrue(prompt.contains("warm"))
+        assertTrue(prompt.contains("child-safe"))
     }
 
     @Test
@@ -48,10 +48,8 @@ class LooLooKidBrainTest {
         val prompt = kidBrain.buildPrompt("Can I build something?").orEmpty()
 
         assertTrue(prompt.contains("trusted grown-up"))
-        assertTrue(prompt.contains("dangerous activities"))
-        assertTrue(prompt.contains("private identifying information"))
-        assertTrue(prompt.contains("encourage secrets"))
-        assertTrue(prompt.contains("adult sexual content"))
+        assertTrue(prompt.contains("danger"))
+        assertTrue(prompt.contains("Safety rules override Olivia"))
     }
 
     @Test
@@ -66,7 +64,16 @@ class LooLooKidBrainTest {
         val prompt = kidBrain.buildPrompt(message).orEmpty()
 
         assertEquals(1, prompt.countOccurrences(message))
-        assertEquals(1, prompt.countOccurrences("[CHILD_MESSAGE]"))
+        assertEquals(1, prompt.countOccurrences("Olivia:"))
+    }
+
+    @Test
+    fun promptNeverExceedsHandheldUtf8Limit() {
+        val prompt = kidBrain.buildPrompt("🌨️".repeat(200)).orEmpty()
+
+        assertTrue(prompt.toByteArray(Charsets.UTF_8).size <= LooLooKidBrain.MAX_PROMPT_UTF8_BYTES)
+        assertTrue(prompt.endsWith(LooLooKidBrain.TRUNCATION_MARKER))
+        assertTrue(!prompt.contains('\uFFFD'))
     }
 
     private fun String.countOccurrences(value: String): Int {

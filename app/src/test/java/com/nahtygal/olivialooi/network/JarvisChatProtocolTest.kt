@@ -1,10 +1,22 @@
 package com.nahtygal.olivialooi.network
 
+import com.nahtygal.olivialooi.brain.LooLooKidBrain
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class JarvisChatProtocolTest {
+    @Test
+    fun kidBrainRequestFitsHandheldLimitsAndEscapesItsNewline() {
+        val prompt = LooLooKidBrain().buildPrompt("Why is the sky blue?").orEmpty()
+        val request = serializeJarvisRequest(prompt)
+
+        assertTrue(prompt.toByteArray(Charsets.UTF_8).size <= 256)
+        assertTrue(request.toByteArray(Charsets.UTF_8).size <= 768)
+        assertTrue(request.contains("\\nOlivia: Why is the sky blue?"))
+        assertTrue(!request.contains('\n'))
+    }
+
     @Test
     fun requestSerializationEscapesTextWithoutChangingUnicode() {
         assertEquals(

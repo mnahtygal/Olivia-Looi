@@ -76,7 +76,7 @@ internal class AndroidJarvisChatClient(
 
     private fun performRequest(prompt: String, requestGeneration: Long): JarvisChatResult {
         if (bearerToken.isBlank()) {
-            Log.w(TAG, "Jarvis handheld token is not configured")
+            Log.w(TAG, "JARVIS_CONFIG_ERROR category=missing_token")
             return JarvisChatResult.Failure(JarvisChatFailure.Configuration)
         }
 
@@ -85,7 +85,7 @@ internal class AndroidJarvisChatClient(
                 if (it.protocol != "https") throw IllegalArgumentException("Jarvis URL must use HTTPS")
             }
         } catch (error: IllegalArgumentException) {
-            Log.w(TAG, "Jarvis URL configuration is invalid", error)
+            Log.w(TAG, "JARVIS_CONFIG_ERROR category=invalid_url")
             return JarvisChatResult.Failure(JarvisChatFailure.Configuration)
         }
 
@@ -102,7 +102,7 @@ internal class AndroidJarvisChatClient(
                 setRequestProperty("Authorization", "Bearer $bearerToken")
             }
         } catch (error: Exception) {
-            Log.w(TAG, "Could not prepare the Jarvis HTTPS connection", error)
+            Log.w(TAG, "JARVIS_CONFIG_ERROR category=tls_setup")
             return JarvisChatResult.Failure(JarvisChatFailure.Configuration)
         }
         Log.d(TAG, "JARVIS_TLS_READY")
@@ -121,11 +121,17 @@ internal class AndroidJarvisChatClient(
 
         return try {
             val requestBody = serializeJarvisRequest(prompt).toByteArray(StandardCharsets.UTF_8)
+            Log.d(
+                TAG,
+                "JARVIS_REQUEST_SIZE prompt_bytes=${prompt.toByteArray(StandardCharsets.UTF_8).size} " +
+                    "body_bytes=${requestBody.size}",
+            )
             connection.setFixedLengthStreamingMode(requestBody.size)
             connection.outputStream.use { it.write(requestBody) }
             Log.d(TAG, "JARVIS_CONNECTED")
 
             val statusCode = connection.responseCode
+            Log.d(TAG, "JARVIS_HTTP_STATUS code=$statusCode")
             val responseStream = if (statusCode in 200..299) {
                 connection.inputStream
             } else {
@@ -135,14 +141,18 @@ internal class AndroidJarvisChatClient(
             Log.d(TAG, "JARVIS_RESPONSE_RECEIVED")
             val result = mapJarvisResponse(statusCode, responseBody)
             if (result is JarvisChatResult.Failure) {
-                Log.w(TAG, "Jarvis request failed: status=$statusCode reason=${result.reason}")
+                if (statusCode !in 200..299) {
+                    Log.w(TAG, "JARVIS_HTTP_ERROR code=$statusCode")
+                } else {
+                    Log.w(TAG, "JARVIS_PARSE_ERROR code=$statusCode")
+                }
             }
             result
         } catch (error: SocketTimeoutException) {
-            Log.w(TAG, "Jarvis request timed out", error)
+            Log.w(TAG, "JARVIS_IO_ERROR category=timeout")
             JarvisChatResult.Failure(JarvisChatFailure.Timeout)
         } catch (error: IOException) {
-            Log.w(TAG, "Jarvis request could not connect", error)
+            Log.w(TAG, "JARVIS_IO_ERROR category=connection")
             JarvisChatResult.Failure(JarvisChatFailure.Connection)
         } finally {
             activeConnection.compareAndSet(connectionHandle, null)
