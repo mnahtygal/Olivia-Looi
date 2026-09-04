@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -48,6 +49,7 @@ import com.nahtygal.olivialooi.ui.theme.SnowWhite
 fun GamesScreen(
     onTicTacToeClick: () -> Unit,
     onMemoryMatchClick: () -> Unit,
+    onColoringClick: () -> Unit,
     onHomeClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -102,6 +104,14 @@ fun GamesScreen(
                             tabletLayout = true,
                             modifier = Modifier.weight(1f),
                         ) { MemoryMatchGameGlyph(Modifier.fillMaxSize()) }
+                        GameMenuCard(
+                            labelResource = R.string.coloring_name,
+                            subtitleResource = R.string.coloring_card_subtitle,
+                            accessibilityResource = R.string.open_coloring_description,
+                            onClick = onColoringClick,
+                            tabletLayout = true,
+                            modifier = Modifier.weight(1f),
+                        ) { ColoringGameGlyph(Modifier.fillMaxSize()) }
                     }
                 } else {
                     Column(
@@ -126,6 +136,14 @@ fun GamesScreen(
                             tabletLayout = false,
                             modifier = Modifier.fillMaxWidth(),
                         ) { MemoryMatchGameGlyph(Modifier.fillMaxSize()) }
+                        GameMenuCard(
+                            labelResource = R.string.coloring_name,
+                            subtitleResource = R.string.coloring_card_subtitle,
+                            accessibilityResource = R.string.open_coloring_description,
+                            onClick = onColoringClick,
+                            tabletLayout = false,
+                            modifier = Modifier.fillMaxWidth(),
+                        ) { ColoringGameGlyph(Modifier.fillMaxSize()) }
                     }
                 }
 
@@ -166,7 +184,13 @@ private fun GameMenuCard(
                     .padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Box(modifier = Modifier.size(210.dp), contentAlignment = Alignment.Center) { glyph() }
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .sizeIn(maxWidth = 190.dp)
+                        .aspectRatio(1f),
+                    contentAlignment = Alignment.Center,
+                ) { glyph() }
                 Spacer(modifier = Modifier.height(14.dp))
                 GameMenuText(labelResource, subtitleResource, tabletLayout = true)
             }
@@ -285,5 +309,47 @@ private fun MemoryMatchGameGlyph(modifier: Modifier = Modifier) {
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun ColoringGameGlyph(modifier: Modifier = Modifier) {
+    Canvas(modifier = modifier) {
+        val paletteCenter = Offset(size.width * 0.48f, size.height * 0.52f)
+        drawOval(
+            color = FrostBlue,
+            topLeft = Offset(size.width * 0.10f, size.height * 0.18f),
+            size = androidx.compose.ui.geometry.Size(size.width * 0.66f, size.height * 0.66f),
+        )
+        listOf(
+            Color(0xFFE85E9F) to Offset(-0.17f, -0.15f),
+            Color(0xFFFFA13D) to Offset(0.04f, -0.22f),
+            Color(0xFF47A86C) to Offset(0.20f, -0.05f),
+            Color(0xFF4A8DE0) to Offset(0.10f, 0.18f),
+            Color(0xFF7864D6) to Offset(-0.15f, 0.18f),
+        ).forEach { (color, position) ->
+            drawCircle(
+                color = color,
+                radius = size.minDimension * 0.075f,
+                center = Offset(
+                    paletteCenter.x + size.width * position.x,
+                    paletteCenter.y + size.height * position.y,
+                ),
+            )
+        }
+        drawLine(
+            color = DeepIndigo,
+            start = Offset(size.width * 0.66f, size.height * 0.78f),
+            end = Offset(size.width * 0.91f, size.height * 0.16f),
+            strokeWidth = size.minDimension * 0.055f,
+            cap = StrokeCap.Round,
+        )
+        drawLine(
+            color = Color(0xFFE060A6),
+            start = Offset(size.width * 0.88f, size.height * 0.23f),
+            end = Offset(size.width * 0.93f, size.height * 0.10f),
+            strokeWidth = size.minDimension * 0.075f,
+            cap = StrokeCap.Round,
+        )
     }
 }
