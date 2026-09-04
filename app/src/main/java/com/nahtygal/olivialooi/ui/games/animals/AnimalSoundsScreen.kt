@@ -46,8 +46,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 import com.nahtygal.olivialooi.R
+import com.nahtygal.olivialooi.audio.LocalAnimalAudioPlayer
 import com.nahtygal.olivialooi.games.animals.AnimalId
 import com.nahtygal.olivialooi.games.animals.AnimalSound
+import com.nahtygal.olivialooi.games.animals.AnimalSoundPlaybackSequence
 import com.nahtygal.olivialooi.games.animals.AnimalSoundsCatalog
 import com.nahtygal.olivialooi.speech.AndroidTextToSpeech
 import com.nahtygal.olivialooi.ui.games.WinterGamesBackground
@@ -62,13 +64,19 @@ fun AnimalSoundsScreen(
 ) {
     val context = LocalContext.current
     val textToSpeech = remember(context) { AndroidTextToSpeech(context.applicationContext) }
+    val animalAudioPlayer = remember(context) { LocalAnimalAudioPlayer(context.applicationContext) }
+    val playbackSequence = remember { AnimalSoundPlaybackSequence() }
     var selectedAnimalId by rememberSaveable { mutableStateOf<String?>(null) }
     var feedbackVersion by rememberSaveable { mutableIntStateOf(0) }
     var showSoundWord by rememberSaveable { mutableStateOf(false) }
     val selectedAnimal = selectedAnimalId?.let(AnimalSoundsCatalog::findById)
 
-    DisposableEffect(textToSpeech) {
-        onDispose { textToSpeech.close() }
+    DisposableEffect(textToSpeech, animalAudioPlayer, playbackSequence) {
+        onDispose {
+            playbackSequence.invalidate()
+            textToSpeech.close()
+            animalAudioPlayer.close()
+        }
     }
     LaunchedEffect(feedbackVersion) {
         if (feedbackVersion > 0) {
@@ -152,9 +160,16 @@ fun AnimalSoundsScreen(
                                         0
                                     },
                                     onClick = {
+                                        val selectionGeneration = playbackSequence.beginSelection()
                                         selectedAnimalId = animal.id.stableId
                                         feedbackVersion += 1
-                                        textToSpeech.speak(animal.spokenPhrase)
+                                        animalAudioPlayer.stop()
+                                        textToSpeech.stop()
+                                        textToSpeech.speak(animal.spokenPhrase) {
+                                            if (playbackSequence.completeSpeech(selectionGeneration)) {
+                                                animalAudioPlayer.play(animal.localAudioAssetName)
+                                            }
+                                        }
                                     },
                                     modifier = Modifier.weight(1f),
                                 )

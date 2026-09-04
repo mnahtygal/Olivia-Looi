@@ -2,6 +2,7 @@ package com.nahtygal.olivialooi.speech
 
 import android.content.Context
 import android.speech.tts.TextToSpeech
+import android.speech.tts.UtteranceProgressListener
 import android.speech.tts.Voice
 import android.util.Log
 import java.util.Locale
@@ -25,17 +26,23 @@ internal class AndroidTextToSpeech(
 
     @Volatile
     private var textToSpeech: TextToSpeech? = null
+    private var activeRequest: SpeechRequest? = null
 
     init {
         Log.d(TAG, "LOOLOO_TTS_INITIALIZING")
         executeUnlessClosed(::createTextToSpeech)
     }
 
-    fun speak(text: String) {
-        if (text.isBlank() || isClosed.get()) return
-        val request = SpeechRequest(text, speechGeneration.incrementAndGet())
-        pendingSpeech.offer(request)?.let { readyRequest ->
-            executeUnlessClosed { speakIfCurrent(readyRequest) }
+    fun speak(text: String, onFinished: ((Boolean) -> Unit)? = null) {
+        if (text.isBlank() || isClosed.get()) {
+            onFinished?.invoke(false)
+            return
+        }
+        val request = SpeechRequest(text, speechGeneration.incrementAndGet(), onFinished)
+        when (val offer = pendingSpeech.offer(request)) {
+            SpeechOffer.Queued -> Unit
+            is SpeechOffer.Ready -> executeUnlessClosed { speakIfCurrent(offer.request) }
+            SpeechOffer.Rejected -> onFinished?.invoke(false)
         }
     }
 
@@ -44,6 +51,7 @@ internal class AndroidTextToSpeech(
         speechGeneration.incrementAndGet()
         pendingSpeech.stop()
         executeUnlessClosed {
+            activeRequest = null
             val result = safely { textToSpeech?.stop() }
             if (result == TextToSpeech.ERROR) logError("stop")
             Log.d(TAG, "LOOLOO_TTS_STOP")
@@ -75,7 +83,7 @@ internal class AndroidTextToSpeech(
                 executeUnlessClosed { finishInitialization(status) }
             }
         } catch (_: RuntimeException) {
-            pendingSpeech.markUnavailable()
+            failPendingSpeech()
             Log.w(TAG, "LOOLOO_TTS_ERROR category=construction")
             null
         }
@@ -84,7 +92,7 @@ internal class AndroidTextToSpeech(
     private fun finishInitialization(status: Int) {
         val engine = textToSpeech
         if (status != TextToSpeech.SUCCESS || engine == null) {
-            pendingSpeech.markUnavailable()
+            failPendingSpeech()
             logError("initialization")
             return
         }
@@ -95,12 +103,18 @@ internal class AndroidTextToSpeech(
             languageResult == TextToSpeech.LANG_MISSING_DATA ||
             languageResult == TextToSpeech.LANG_NOT_SUPPORTED
         ) {
-            pendingSpeech.markUnavailable()
+            failPendingSpeech()
             logError("english_unavailable")
             return
         }
 
         discoverAndSelectVoice(engine)
+        val listenerResult = safely { engine.setOnUtteranceProgressListener(completionListener()) }
+        if (listenerResult != TextToSpeech.SUCCESS) {
+            failPendingSpeech()
+            logError("completion_listener")
+            return
+        }
 
         if (safely { engine.setSpeechRate(SPEECH_RATE) } == TextToSpeech.ERROR) {
             logError("speech_rate")
@@ -166,15 +180,54 @@ internal class AndroidTextToSpeech(
                 request.text,
                 TextToSpeech.QUEUE_FLUSH,
                 null,
-                RESPONSE_UTTERANCE_ID,
+                utteranceId(request.generation),
             )
         }
         if (result == TextToSpeech.SUCCESS) {
+            activeRequest = request
             Log.d(TAG, "LOOLOO_TTS_SPEAK")
         } else {
             logError("speak")
+            finishRequestIfCurrent(request, succeeded = false)
         }
     }
+
+    private fun completionListener() = object : UtteranceProgressListener() {
+        override fun onStart(utteranceId: String?) = Unit
+
+        override fun onDone(utteranceId: String?) {
+            executeUnlessClosed { finishSpeech(utteranceId, succeeded = true) }
+        }
+
+        @Deprecated("Deprecated by Android")
+        override fun onError(utteranceId: String?) {
+            executeUnlessClosed { finishSpeech(utteranceId, succeeded = false) }
+        }
+
+        override fun onError(utteranceId: String?, errorCode: Int) {
+            executeUnlessClosed { finishSpeech(utteranceId, succeeded = false) }
+        }
+    }
+
+    private fun finishSpeech(utteranceId: String?, succeeded: Boolean) {
+        val request = activeRequest ?: return
+        if (utteranceId != utteranceId(request.generation)) return
+        finishRequestIfCurrent(request, succeeded)
+    }
+
+    private fun finishRequestIfCurrent(request: SpeechRequest, succeeded: Boolean) {
+        if (speechGeneration.get() != request.generation) return
+        if (activeRequest === request) activeRequest = null
+        request.onFinished?.invoke(succeeded)
+    }
+
+    private fun failPendingSpeech() {
+        pendingSpeech.markUnavailable()?.let { request ->
+            finishRequestIfCurrent(request, succeeded = false)
+        }
+    }
+
+    private fun utteranceId(generation: Long) = "$RESPONSE_UTTERANCE_ID-$generation"
 
     private fun executeUnlessClosed(block: () -> Unit) {
         if (isClosed.get()) return

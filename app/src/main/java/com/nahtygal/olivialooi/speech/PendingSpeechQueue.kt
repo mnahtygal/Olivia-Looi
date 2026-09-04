@@ -6,16 +6,16 @@ internal class PendingSpeechQueue {
     private var pendingRequest: SpeechRequest? = null
 
     @Synchronized
-    fun offer(request: SpeechRequest): SpeechRequest? = when (state) {
+    fun offer(request: SpeechRequest): SpeechOffer = when (state) {
         State.Initializing -> {
             pendingRequest = request
-            null
+            SpeechOffer.Queued
         }
 
-        State.Ready -> request
+        State.Ready -> SpeechOffer.Ready(request)
         State.Unavailable,
         State.Closed,
-        -> null
+        -> SpeechOffer.Rejected
     }
 
     @Synchronized
@@ -26,10 +26,10 @@ internal class PendingSpeechQueue {
     }
 
     @Synchronized
-    fun markUnavailable() {
-        if (state == State.Closed) return
+    fun markUnavailable(): SpeechRequest? {
+        if (state == State.Closed) return null
         state = State.Unavailable
-        pendingRequest = null
+        return pendingRequest.also { pendingRequest = null }
     }
 
     @Synchronized
@@ -54,4 +54,11 @@ internal class PendingSpeechQueue {
 internal data class SpeechRequest(
     val text: String,
     val generation: Long,
+    val onFinished: ((Boolean) -> Unit)? = null,
 )
+
+internal sealed interface SpeechOffer {
+    data object Queued : SpeechOffer
+    data class Ready(val request: SpeechRequest) : SpeechOffer
+    data object Rejected : SpeechOffer
+}

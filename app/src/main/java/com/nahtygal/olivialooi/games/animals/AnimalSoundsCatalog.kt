@@ -18,19 +18,19 @@ data class AnimalSound(
     val visualSymbol: String,
     val spokenPhrase: String,
     val soundWord: String,
-    val localAudioAssetName: String? = null,
+    val localAudioAssetName: String,
 )
 
 object AnimalSoundsCatalog {
     val animals: List<AnimalSound> = listOf(
-        AnimalSound(AnimalId.Cow, "Cow", "🐮", "The cow says... Moo!", "Moo!"),
-        AnimalSound(AnimalId.Dog, "Dog", "🐶", "The dog says... Woof woof!", "Woof!"),
-        AnimalSound(AnimalId.Cat, "Cat", "🐱", "The cat says... Meow!", "Meow!"),
-        AnimalSound(AnimalId.Pig, "Pig", "🐷", "The pig says... Oink oink!", "Oink!"),
-        AnimalSound(AnimalId.Duck, "Duck", "🦆", "The duck says... Quack quack!", "Quack!"),
-        AnimalSound(AnimalId.Sheep, "Sheep", "🐑", "The sheep says... Baa!", "Baa!"),
-        AnimalSound(AnimalId.Horse, "Horse", "🐴", "The horse says... Neigh!", "Neigh!"),
-        AnimalSound(AnimalId.Frog, "Frog", "🐸", "The frog says... Ribbit!", "Ribbit!"),
+        AnimalSound(AnimalId.Cow, "Cow", "🐮", "The cow says...", "Moo!", "animal_cow_moo"),
+        AnimalSound(AnimalId.Dog, "Dog", "🐶", "The dog says...", "Woof!", "animal_dog_bark"),
+        AnimalSound(AnimalId.Cat, "Cat", "🐱", "The cat says...", "Meow!", "animal_cat_meow"),
+        AnimalSound(AnimalId.Pig, "Pig", "🐷", "The pig says...", "Oink!", "animal_pig_oink"),
+        AnimalSound(AnimalId.Duck, "Duck", "🦆", "The duck says...", "Quack!", "animal_duck_quack"),
+        AnimalSound(AnimalId.Sheep, "Sheep", "🐑", "The sheep says...", "Baa!", "animal_sheep_baa"),
+        AnimalSound(AnimalId.Horse, "Horse", "🐴", "The horse says...", "Neigh!", "animal_horse_neigh"),
+        AnimalSound(AnimalId.Frog, "Frog", "🐸", "The frog says...", "Ribbit!", "animal_frog_ribbit"),
     )
 
     fun findById(stableId: String): AnimalSound? =

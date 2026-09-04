@@ -51,14 +51,14 @@ class AnimalSoundsCatalogTest {
     @Test
     fun `each animal has its expected toddler phrase`() {
         val expectedPhrases = mapOf(
-            AnimalId.Cow to "The cow says... Moo!",
-            AnimalId.Dog to "The dog says... Woof woof!",
-            AnimalId.Cat to "The cat says... Meow!",
-            AnimalId.Pig to "The pig says... Oink oink!",
-            AnimalId.Duck to "The duck says... Quack quack!",
-            AnimalId.Sheep to "The sheep says... Baa!",
-            AnimalId.Horse to "The horse says... Neigh!",
-            AnimalId.Frog to "The frog says... Ribbit!",
+            AnimalId.Cow to "The cow says...",
+            AnimalId.Dog to "The dog says...",
+            AnimalId.Cat to "The cat says...",
+            AnimalId.Pig to "The pig says...",
+            AnimalId.Duck to "The duck says...",
+            AnimalId.Sheep to "The sheep says...",
+            AnimalId.Horse to "The horse says...",
+            AnimalId.Frog to "The frog says...",
         )
 
         assertEquals(
@@ -93,17 +93,38 @@ class AnimalSoundsCatalogTest {
     }
 
     @Test
-    fun `catalog is local-only and future audio metadata may be absent`() {
+    fun `each animal maps to its expected local audio asset`() {
+        val expectedAssets = mapOf(
+            AnimalId.Cow to "animal_cow_moo",
+            AnimalId.Dog to "animal_dog_bark",
+            AnimalId.Cat to "animal_cat_meow",
+            AnimalId.Pig to "animal_pig_oink",
+            AnimalId.Duck to "animal_duck_quack",
+            AnimalId.Sheep to "animal_sheep_baa",
+            AnimalId.Horse to "animal_horse_neigh",
+            AnimalId.Frog to "animal_frog_ribbit",
+        )
+
+        assertEquals(
+            expectedAssets,
+            AnimalSoundsCatalog.animals.associate { it.id to it.localAudioAssetName },
+        )
+    }
+
+    @Test
+    fun `local audio asset names are present unique and local-only`() {
+        val assetNames = AnimalSoundsCatalog.animals.map(AnimalSound::localAudioAssetName)
+        assertEquals(assetNames.size, assetNames.distinct().size)
         AnimalSoundsCatalog.animals.forEach { animal ->
             val content = listOf(
                 animal.displayName,
                 animal.visualSymbol,
                 animal.spokenPhrase,
                 animal.soundWord,
-                animal.localAudioAssetName.orEmpty(),
+                animal.localAudioAssetName,
             )
             assertTrue(content.none { "://" in it })
-            assertNull(animal.localAudioAssetName)
+            assertTrue(animal.localAudioAssetName.isNotBlank())
         }
     }
 }

@@ -11,8 +11,8 @@ class PendingSpeechQueueTest {
         val first = SpeechRequest("First response", generation = 1)
         val newest = SpeechRequest("Newest response", generation = 2)
 
-        assertNull(queue.offer(first))
-        assertNull(queue.offer(newest))
+        assertEquals(SpeechOffer.Queued, queue.offer(first))
+        assertEquals(SpeechOffer.Queued, queue.offer(newest))
 
         assertEquals(newest, queue.markReady())
         assertNull(queue.markReady())
@@ -24,7 +24,7 @@ class PendingSpeechQueueTest {
         queue.markReady()
         val request = SpeechRequest("LooLoo response", generation = 1)
 
-        assertEquals(request, queue.offer(request))
+        assertEquals(SpeechOffer.Ready(request), queue.offer(request))
     }
 
     @Test
@@ -43,12 +43,12 @@ class PendingSpeechQueueTest {
         unavailable.offer(SpeechRequest("Pending", generation = 1))
         unavailable.markUnavailable()
 
-        assertNull(unavailable.offer(SpeechRequest("Later", generation = 2)))
+        assertEquals(SpeechOffer.Rejected, unavailable.offer(SpeechRequest("Later", generation = 2)))
         assertNull(unavailable.markReady())
 
         val closed = PendingSpeechQueue()
         closed.close()
-        assertNull(closed.offer(SpeechRequest("Never speak", generation = 1)))
+        assertEquals(SpeechOffer.Rejected, closed.offer(SpeechRequest("Never speak", generation = 1)))
         assertNull(closed.markReady())
     }
 }
