@@ -56,6 +56,11 @@
     <string name="speak_spell_name">Speak &amp; Spell</string>
     <string name="speak_spell_card_subtitle">Let\'s spell some words!</string>
     <string name="open_speak_spell_description">Play Speak &amp; Spell</string>
+    <string name="animal_sounds_name">Animal Sounds</string>
+    <string name="animal_sounds_card_subtitle">Who says moo?</string>
+    <string name="open_animal_sounds_description">Play Animal Sounds</string>
+    <string name="animal_sounds_prompt">Tap an animal!</string>
+    <string name="animal_sound_tile_description">%1$s. Tap to hear the %2$s.</string>
     <string name="back_to_home">Back to Home</string>
     <string name="back_to_games">Back to Games</string>
     <string name="home_action">Home</string>

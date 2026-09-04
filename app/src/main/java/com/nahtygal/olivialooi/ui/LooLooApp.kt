@@ -16,6 +16,7 @@ import com.nahtygal.olivialooi.games.spelling.SpellingLevel
 import com.nahtygal.olivialooi.games.tictactoe.TicTacToeGameMode
 import com.nahtygal.olivialooi.ui.apps.AppsScreen
 import com.nahtygal.olivialooi.ui.games.GamesScreen
+import com.nahtygal.olivialooi.ui.games.animals.AnimalSoundsScreen
 import com.nahtygal.olivialooi.ui.games.coloring.ColoringCanvasScreen
 import com.nahtygal.olivialooi.ui.games.coloring.ColoringPictureScreen
 import com.nahtygal.olivialooi.ui.games.memory.MemoryMatchGameScreen
@@ -38,6 +39,7 @@ private enum class LooLooScreen {
     ColoringCanvas,
     SpeakAndSpellLevel,
     SpeakAndSpellGame,
+    AnimalSounds,
 }
 
 @Composable
@@ -78,6 +80,7 @@ fun LooLooApp() {
                 LooLooScreen.ColoringPictures -> LooLooScreen.Games
                 LooLooScreen.SpeakAndSpellGame -> LooLooScreen.SpeakAndSpellLevel
                 LooLooScreen.SpeakAndSpellLevel -> LooLooScreen.Games
+                LooLooScreen.AnimalSounds -> LooLooScreen.Games
                 LooLooScreen.Games -> LooLooScreen.Home
                 LooLooScreen.Apps -> LooLooScreen.Home
                 LooLooScreen.Home -> LooLooScreen.Home
@@ -103,6 +106,7 @@ fun LooLooApp() {
             onMemoryMatchClick = { navigateTo(LooLooScreen.MemoryMatchMode) },
             onColoringClick = { navigateTo(LooLooScreen.ColoringPictures) },
             onSpeakAndSpellClick = { navigateTo(LooLooScreen.SpeakAndSpellLevel) },
+            onAnimalSoundsClick = { navigateTo(LooLooScreen.AnimalSounds) },
             onHomeClick = { navigateTo(LooLooScreen.Home) },
         )
 
@@ -160,6 +164,10 @@ fun LooLooApp() {
             level = spellingLevel,
             onPickAnotherLevelClick = { navigateTo(LooLooScreen.SpeakAndSpellLevel) },
             onBackToGamesClick = { navigateTo(LooLooScreen.Games) },
+        )
+
+        LooLooScreen.AnimalSounds -> AnimalSoundsScreen(
+            onGamesClick = { navigateTo(LooLooScreen.Games) },
         )
     }
 }

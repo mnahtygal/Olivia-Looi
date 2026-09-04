@@ -51,6 +51,7 @@ fun GamesScreen(
     onMemoryMatchClick: () -> Unit,
     onColoringClick: () -> Unit,
     onSpeakAndSpellClick: () -> Unit,
+    onAnimalSoundsClick: () -> Unit,
     onHomeClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -86,7 +87,9 @@ fun GamesScreen(
 
                 if (tabletLayout) {
                     Column(
-                        modifier = Modifier.widthIn(max = 760.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .widthIn(max = 760.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp),
                     ) {
                         Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
@@ -124,6 +127,19 @@ fun GamesScreen(
                                 tabletLayout = true,
                                 modifier = Modifier.weight(1f),
                             ) { SpeakAndSpellGameGlyph(Modifier.fillMaxSize()) }
+                        }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.Center,
+                        ) {
+                            GameMenuCard(
+                                labelResource = R.string.animal_sounds_name,
+                                subtitleResource = R.string.animal_sounds_card_subtitle,
+                                accessibilityResource = R.string.open_animal_sounds_description,
+                                onClick = onAnimalSoundsClick,
+                                tabletLayout = true,
+                                modifier = Modifier.fillMaxWidth(0.49f),
+                            ) { AnimalSoundsGameGlyph(Modifier.fillMaxSize()) }
                         }
                     }
                 } else {
@@ -165,6 +181,14 @@ fun GamesScreen(
                             tabletLayout = false,
                             modifier = Modifier.fillMaxWidth(),
                         ) { SpeakAndSpellGameGlyph(Modifier.fillMaxSize()) }
+                        GameMenuCard(
+                            labelResource = R.string.animal_sounds_name,
+                            subtitleResource = R.string.animal_sounds_card_subtitle,
+                            accessibilityResource = R.string.open_animal_sounds_description,
+                            onClick = onAnimalSoundsClick,
+                            tabletLayout = false,
+                            modifier = Modifier.fillMaxWidth(),
+                        ) { AnimalSoundsGameGlyph(Modifier.fillMaxSize()) }
                     }
                 }
 
@@ -400,6 +424,30 @@ private fun SpeakAndSpellGameGlyph(modifier: Modifier = Modifier) {
                     fontWeight = FontWeight.Black,
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun AnimalSoundsGameGlyph(modifier: Modifier = Modifier) {
+    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+        Text(
+            text = "🐮",
+            fontSize = 86.sp,
+            textAlign = TextAlign.Center,
+        )
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .background(Color(0xFFFFEAF5), RoundedCornerShape(18.dp))
+                .padding(horizontal = 10.dp, vertical = 6.dp),
+        ) {
+            Text(
+                text = "MOO!",
+                color = DeepIndigo,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Black,
+            )
         }
     }
 }
