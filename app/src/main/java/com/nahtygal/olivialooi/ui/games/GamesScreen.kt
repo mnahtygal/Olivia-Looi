@@ -54,6 +54,7 @@ fun GamesScreen(
     onSpeakAndSpellClick: () -> Unit,
     onAnimalSoundsClick: () -> Unit,
     onCountingClick: () -> Unit,
+    onMathClick: () -> Unit,
     onHomeClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -153,6 +154,17 @@ fun GamesScreen(
                                 modifier = Modifier.weight(1f),
                             ) { CountingGameGlyph(Modifier.fillMaxSize()) }
                         }
+                        Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+                            GameMenuCard(
+                                labelResource = R.string.math_name,
+                                subtitleResource = R.string.math_card_subtitle,
+                                accessibilityResource = R.string.open_math_description,
+                                onClick = onMathClick,
+                                tabletLayout = true,
+                                modifier = Modifier.weight(1f),
+                            ) { MathGameGlyph(Modifier.fillMaxSize()) }
+                            Spacer(modifier = Modifier.weight(1f))
+                        }
                     }
                 } else {
                     Column(
@@ -209,6 +221,14 @@ fun GamesScreen(
                             tabletLayout = false,
                             modifier = Modifier.fillMaxWidth(),
                         ) { CountingGameGlyph(Modifier.fillMaxSize()) }
+                        GameMenuCard(
+                            labelResource = R.string.math_name,
+                            subtitleResource = R.string.math_card_subtitle,
+                            accessibilityResource = R.string.open_math_description,
+                            onClick = onMathClick,
+                            tabletLayout = false,
+                            modifier = Modifier.fillMaxWidth(),
+                        ) { MathGameGlyph(Modifier.fillMaxSize()) }
                     }
                 }
 
@@ -498,6 +518,28 @@ private fun CountingGameGlyph(modifier: Modifier = Modifier) {
                     fontWeight = FontWeight.Black,
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun MathGameGlyph(modifier: Modifier = Modifier) {
+    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                text = "3 + 2",
+                color = Color(0xFF6554C0),
+                fontSize = 38.sp,
+                lineHeight = 42.sp,
+                fontWeight = FontWeight.Black,
+            )
+            Text(
+                text = "= ?  ⭐",
+                color = Color(0xFFE060A6),
+                fontSize = 31.sp,
+                lineHeight = 35.sp,
+                fontWeight = FontWeight.Black,
+            )
         }
     }
 }

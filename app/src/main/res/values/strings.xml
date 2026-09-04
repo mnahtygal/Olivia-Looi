@@ -64,6 +64,47 @@
     <string name="counting_name">Count With LooLoo</string>
     <string name="counting_card_subtitle">Let\'s count together!</string>
     <string name="open_counting_description">Play Count With LooLoo</string>
+    <string name="math_name">Math With LooLoo</string>
+    <string name="math_card_subtitle">Add, subtract, and earn Stars!</string>
+    <string name="open_math_description">Play Math With LooLoo</string>
+    <string name="math_pick_level">Choose a level!</string>
+    <string name="math_level_little">LITTLE MATH</string>
+    <string name="math_level_big">BIG MATH</string>
+    <string name="math_level_super">SUPER MATH</string>
+    <string name="math_level_challenge">MATH CHALLENGE</string>
+    <string name="math_level_single_subtitle">Numbers to 9</string>
+    <string name="math_level_double_subtitle">Numbers to 99</string>
+    <string name="math_level_triple_subtitle">Numbers to 999</string>
+    <string name="math_level_mixed_subtitle">Mix them up!</string>
+    <string name="math_level_description">%1$s. %2$s</string>
+    <string name="math_problem_progress">Problem %1$d of %2$d</string>
+    <string name="math_stars">⭐ Stars: %1$d</string>
+    <string name="math_problem_description">What is %1$d %2$s %3$d?</string>
+    <string name="math_answer_description">Answer %1$d, %2$s</string>
+    <string name="math_answer_correct_state">selected and correct</string>
+    <string name="math_answer_try_again_state">selected, try again</string>
+    <string name="math_answer_not_selected_state">not selected</string>
+    <string name="math_correct">Correct!</string>
+    <string name="math_try_again">Try again</string>
+    <string name="math_correct_feedback">🎉 You got it! +2 Stars</string>
+    <string name="math_incorrect_feedback">Almost—try once more! +1 Star</string>
+    <string name="math_say_again">🔊 Say Again</string>
+    <string name="math_help">💡 Help Me</string>
+    <string name="math_say_again_description">Say the current math problem again</string>
+    <string name="math_help_description">Get help with this math problem</string>
+    <string name="math_next_problem">Next Problem</string>
+    <string name="math_next_problem_description">Go to the next math problem</string>
+    <string name="math_visual_addition_description">Addition counting help: start=%1$d, add=%2$d</string>
+    <string name="math_visual_subtraction_description">Subtraction counting help: start=%1$d, take away=%2$d</string>
+    <string name="math_session_complete">Great math, Olivia!</string>
+    <plurals name="math_session_stars">
+        <item quantity="one">⭐ You earned %1$d star!</item>
+        <item quantity="other">⭐ You earned %1$d stars!</item>
+    </plurals>
+    <string name="math_more">Math Some More</string>
+    <string name="math_more_description">Start another five math problems at this level</string>
+    <string name="math_pick_another_level">Pick Another Level</string>
+    <string name="math_pick_another_level_description">Return to math level choices</string>
     <string name="counting_pick_level">Pick a level!</string>
     <string name="counting_level_1">LEVEL 1</string>
     <string name="counting_level_2">LEVEL 2</string>

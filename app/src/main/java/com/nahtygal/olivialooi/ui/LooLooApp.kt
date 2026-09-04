@@ -3,6 +3,7 @@ package com.nahtygal.olivialooi.ui
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -13,6 +14,7 @@ import com.nahtygal.olivialooi.apps.KidAppLauncher
 import com.nahtygal.olivialooi.games.coloring.ColoringPicture
 import com.nahtygal.olivialooi.games.counting.CountingLevel
 import com.nahtygal.olivialooi.games.memory.MemoryGameSize
+import com.nahtygal.olivialooi.games.math.MathLevel
 import com.nahtygal.olivialooi.games.spelling.SpellingLevel
 import com.nahtygal.olivialooi.games.tictactoe.TicTacToeGameMode
 import com.nahtygal.olivialooi.ui.apps.AppsScreen
@@ -24,6 +26,8 @@ import com.nahtygal.olivialooi.ui.games.counting.CountingGameScreen
 import com.nahtygal.olivialooi.ui.games.counting.CountingLevelScreen
 import com.nahtygal.olivialooi.ui.games.memory.MemoryMatchGameScreen
 import com.nahtygal.olivialooi.ui.games.memory.MemoryMatchModeScreen
+import com.nahtygal.olivialooi.ui.games.math.MathGameScreen
+import com.nahtygal.olivialooi.ui.games.math.MathLevelScreen
 import com.nahtygal.olivialooi.ui.games.spelling.SpeakAndSpellGameScreen
 import com.nahtygal.olivialooi.ui.games.spelling.SpeakAndSpellLevelScreen
 import com.nahtygal.olivialooi.ui.games.tictactoe.TicTacToeGameScreen
@@ -45,6 +49,8 @@ private enum class LooLooScreen {
     AnimalSounds,
     CountingLevel,
     CountingGame,
+    MathLevel,
+    MathGame,
 }
 
 @Composable
@@ -67,12 +73,15 @@ fun LooLooApp() {
     var countingLevelName by rememberSaveable {
         mutableStateOf(CountingLevel.Level1.name)
     }
+    var mathLevelName by rememberSaveable { mutableStateOf(MathLevel.SINGLE_DIGIT.name) }
+    var mathSessionId by rememberSaveable { mutableIntStateOf(0) }
     val screen = enumValueOf<LooLooScreen>(screenName)
     val gameMode = enumValueOf<TicTacToeGameMode>(gameModeName)
     val memoryGameSize = enumValueOf<MemoryGameSize>(memoryGameSizeName)
     val coloringPicture = enumValueOf<ColoringPicture>(coloringPictureName)
     val spellingLevel = enumValueOf<SpellingLevel>(spellingLevelName)
     val countingLevel = enumValueOf<CountingLevel>(countingLevelName)
+    val mathLevel = enumValueOf<MathLevel>(mathLevelName)
 
     fun navigateTo(destination: LooLooScreen) {
         screenName = destination.name
@@ -92,6 +101,8 @@ fun LooLooApp() {
                 LooLooScreen.AnimalSounds -> LooLooScreen.Games
                 LooLooScreen.CountingGame -> LooLooScreen.CountingLevel
                 LooLooScreen.CountingLevel -> LooLooScreen.Games
+                LooLooScreen.MathGame -> LooLooScreen.MathLevel
+                LooLooScreen.MathLevel -> LooLooScreen.Games
                 LooLooScreen.Games -> LooLooScreen.Home
                 LooLooScreen.Apps -> LooLooScreen.Home
                 LooLooScreen.Home -> LooLooScreen.Home
@@ -119,6 +130,7 @@ fun LooLooApp() {
             onSpeakAndSpellClick = { navigateTo(LooLooScreen.SpeakAndSpellLevel) },
             onAnimalSoundsClick = { navigateTo(LooLooScreen.AnimalSounds) },
             onCountingClick = { navigateTo(LooLooScreen.CountingLevel) },
+            onMathClick = { navigateTo(LooLooScreen.MathLevel) },
             onHomeClick = { navigateTo(LooLooScreen.Home) },
         )
 
@@ -193,6 +205,22 @@ fun LooLooApp() {
         LooLooScreen.CountingGame -> CountingGameScreen(
             level = countingLevel,
             onPickAnotherLevelClick = { navigateTo(LooLooScreen.CountingLevel) },
+            onBackToGamesClick = { navigateTo(LooLooScreen.Games) },
+        )
+
+        LooLooScreen.MathLevel -> MathLevelScreen(
+            onLevelSelected = { selectedLevel ->
+                mathLevelName = selectedLevel.name
+                mathSessionId += 1
+                navigateTo(LooLooScreen.MathGame)
+            },
+            onGamesClick = { navigateTo(LooLooScreen.Games) },
+        )
+
+        LooLooScreen.MathGame -> MathGameScreen(
+            level = mathLevel,
+            sessionId = mathSessionId,
+            onPickAnotherLevelClick = { navigateTo(LooLooScreen.MathLevel) },
             onBackToGamesClick = { navigateTo(LooLooScreen.Games) },
         )
     }
