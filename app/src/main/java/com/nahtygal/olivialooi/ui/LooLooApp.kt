@@ -12,6 +12,7 @@ import com.nahtygal.olivialooi.apps.KidAppLaunchResult
 import com.nahtygal.olivialooi.apps.KidAppLauncher
 import com.nahtygal.olivialooi.games.coloring.ColoringPicture
 import com.nahtygal.olivialooi.games.memory.MemoryGameSize
+import com.nahtygal.olivialooi.games.spelling.SpellingLevel
 import com.nahtygal.olivialooi.games.tictactoe.TicTacToeGameMode
 import com.nahtygal.olivialooi.ui.apps.AppsScreen
 import com.nahtygal.olivialooi.ui.games.GamesScreen
@@ -19,6 +20,8 @@ import com.nahtygal.olivialooi.ui.games.coloring.ColoringCanvasScreen
 import com.nahtygal.olivialooi.ui.games.coloring.ColoringPictureScreen
 import com.nahtygal.olivialooi.ui.games.memory.MemoryMatchGameScreen
 import com.nahtygal.olivialooi.ui.games.memory.MemoryMatchModeScreen
+import com.nahtygal.olivialooi.ui.games.spelling.SpeakAndSpellGameScreen
+import com.nahtygal.olivialooi.ui.games.spelling.SpeakAndSpellLevelScreen
 import com.nahtygal.olivialooi.ui.games.tictactoe.TicTacToeGameScreen
 import com.nahtygal.olivialooi.ui.games.tictactoe.TicTacToeModeScreen
 import com.nahtygal.olivialooi.ui.home.LooLooHomeScreen
@@ -33,6 +36,8 @@ private enum class LooLooScreen {
     MemoryMatchGame,
     ColoringPictures,
     ColoringCanvas,
+    SpeakAndSpellLevel,
+    SpeakAndSpellGame,
 }
 
 @Composable
@@ -49,10 +54,14 @@ fun LooLooApp() {
     var coloringPictureName by rememberSaveable {
         mutableStateOf(ColoringPicture.Butterfly.name)
     }
+    var spellingLevelName by rememberSaveable {
+        mutableStateOf(SpellingLevel.Level1.name)
+    }
     val screen = enumValueOf<LooLooScreen>(screenName)
     val gameMode = enumValueOf<TicTacToeGameMode>(gameModeName)
     val memoryGameSize = enumValueOf<MemoryGameSize>(memoryGameSizeName)
     val coloringPicture = enumValueOf<ColoringPicture>(coloringPictureName)
+    val spellingLevel = enumValueOf<SpellingLevel>(spellingLevelName)
 
     fun navigateTo(destination: LooLooScreen) {
         screenName = destination.name
@@ -67,6 +76,8 @@ fun LooLooApp() {
                 LooLooScreen.MemoryMatchMode -> LooLooScreen.Games
                 LooLooScreen.ColoringCanvas -> LooLooScreen.ColoringPictures
                 LooLooScreen.ColoringPictures -> LooLooScreen.Games
+                LooLooScreen.SpeakAndSpellGame -> LooLooScreen.SpeakAndSpellLevel
+                LooLooScreen.SpeakAndSpellLevel -> LooLooScreen.Games
                 LooLooScreen.Games -> LooLooScreen.Home
                 LooLooScreen.Apps -> LooLooScreen.Home
                 LooLooScreen.Home -> LooLooScreen.Home
@@ -91,6 +102,7 @@ fun LooLooApp() {
             onTicTacToeClick = { navigateTo(LooLooScreen.TicTacToeMode) },
             onMemoryMatchClick = { navigateTo(LooLooScreen.MemoryMatchMode) },
             onColoringClick = { navigateTo(LooLooScreen.ColoringPictures) },
+            onSpeakAndSpellClick = { navigateTo(LooLooScreen.SpeakAndSpellLevel) },
             onHomeClick = { navigateTo(LooLooScreen.Home) },
         )
 
@@ -133,6 +145,20 @@ fun LooLooApp() {
         LooLooScreen.ColoringCanvas -> ColoringCanvasScreen(
             picture = coloringPicture,
             onNewPictureClick = { navigateTo(LooLooScreen.ColoringPictures) },
+            onBackToGamesClick = { navigateTo(LooLooScreen.Games) },
+        )
+
+        LooLooScreen.SpeakAndSpellLevel -> SpeakAndSpellLevelScreen(
+            onLevelSelected = { selectedLevel ->
+                spellingLevelName = selectedLevel.name
+                navigateTo(LooLooScreen.SpeakAndSpellGame)
+            },
+            onGamesClick = { navigateTo(LooLooScreen.Games) },
+        )
+
+        LooLooScreen.SpeakAndSpellGame -> SpeakAndSpellGameScreen(
+            level = spellingLevel,
+            onPickAnotherLevelClick = { navigateTo(LooLooScreen.SpeakAndSpellLevel) },
             onBackToGamesClick = { navigateTo(LooLooScreen.Games) },
         )
     }

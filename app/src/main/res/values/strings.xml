@@ -53,6 +53,9 @@
     <string name="coloring_name">Coloring</string>
     <string name="coloring_card_subtitle">Let\'s make a picture!</string>
     <string name="open_coloring_description">Open Coloring</string>
+    <string name="speak_spell_name">Speak &amp; Spell</string>
+    <string name="speak_spell_card_subtitle">Let\'s spell some words!</string>
+    <string name="open_speak_spell_description">Play Speak &amp; Spell</string>
     <string name="back_to_home">Back to Home</string>
     <string name="back_to_games">Back to Games</string>
     <string name="home_action">Home</string>
@@ -125,6 +128,41 @@
     <string name="coloring_keep_coloring">Keep coloring</string>
     <string name="coloring_lets_color_speech">Let\'s color!</string>
     <string name="coloring_encouragement_speech">That looks great!</string>
+
+    <string name="speak_spell_pick_level">Pick a level!</string>
+    <string name="speak_spell_level_1">LEVEL 1</string>
+    <string name="speak_spell_level_2">LEVEL 2</string>
+    <string name="speak_spell_level_3">LEVEL 3</string>
+    <string name="speak_spell_three_letter_words">3-letter words</string>
+    <string name="speak_spell_four_letter_words">4-letter words</string>
+    <string name="speak_spell_mixed_words">Mixed words</string>
+    <string name="speak_spell_level_1_subtitle">Let\'s start!</string>
+    <string name="speak_spell_level_2_subtitle">A little trickier!</string>
+    <string name="speak_spell_level_3_subtitle">Ready for a challenge!</string>
+    <string name="speak_spell_level_description">%1$s, %2$s. %3$s</string>
+    <plurals name="speak_spell_words_spelled">
+        <item quantity="one">Words spelled: %1$d</item>
+        <item quantity="other">Words spelled: %1$d</item>
+    </plurals>
+    <string name="speak_spell_slot_description">Letter %1$d, %2$s</string>
+    <string name="speak_spell_slot_empty">empty</string>
+    <string name="speak_spell_slot_hint">hint %1$c</string>
+    <string name="speak_spell_hint_label">HINT</string>
+    <string name="speak_spell_letter_description">Letter %1$c</string>
+    <string name="speak_spell_letter_used_description">Letter %1$c, used</string>
+    <string name="speak_spell_say_again">🔊 Say Again</string>
+    <string name="speak_spell_help_me">Help Me</string>
+    <string name="speak_spell_backspace">Undo Letter</string>
+    <string name="speak_spell_say_again_description">Say word again</string>
+    <string name="speak_spell_help_description">Help with word</string>
+    <string name="speak_spell_backspace_description">Remove last letter</string>
+    <string name="speak_spell_correct_message">You got it!</string>
+    <string name="speak_spell_almost_message">Almost! Let\'s try that one again.</string>
+    <string name="speak_spell_incorrect_speech">Almost! Let\'s try that one again.</string>
+    <string name="speak_spell_next_word">Next Word</string>
+    <string name="speak_spell_session_complete">Great spelling, Olivia!</string>
+    <string name="speak_spell_more_words">Spell More Words</string>
+    <string name="speak_spell_pick_another_level">Pick Another Level</string>
 
     <string name="tic_tac_toe_mode_heading">Who would you like to play with?</string>
     <string name="tic_tac_toe_mode_subtitle">Choose your Tic-Tac-Toe game mode</string>

@@ -50,6 +50,7 @@ fun GamesScreen(
     onTicTacToeClick: () -> Unit,
     onMemoryMatchClick: () -> Unit,
     onColoringClick: () -> Unit,
+    onSpeakAndSpellClick: () -> Unit,
     onHomeClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -84,34 +85,46 @@ fun GamesScreen(
                 Spacer(modifier = Modifier.height(if (tabletLayout) 24.dp else 14.dp))
 
                 if (tabletLayout) {
-                    Row(
+                    Column(
                         modifier = Modifier.widthIn(max = 760.dp),
-                        horizontalArrangement = Arrangement.spacedBy(20.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
                     ) {
-                        GameMenuCard(
-                            labelResource = R.string.tic_tac_toe_name,
-                            subtitleResource = R.string.tic_tac_toe_card_subtitle,
-                            accessibilityResource = R.string.open_tic_tac_toe_description,
-                            onClick = onTicTacToeClick,
-                            tabletLayout = true,
-                            modifier = Modifier.weight(1f),
-                        ) { TicTacToeGameGlyph(Modifier.fillMaxSize()) }
-                        GameMenuCard(
-                            labelResource = R.string.memory_match_name,
-                            subtitleResource = R.string.memory_match_card_subtitle,
-                            accessibilityResource = R.string.open_memory_match_description,
-                            onClick = onMemoryMatchClick,
-                            tabletLayout = true,
-                            modifier = Modifier.weight(1f),
-                        ) { MemoryMatchGameGlyph(Modifier.fillMaxSize()) }
-                        GameMenuCard(
-                            labelResource = R.string.coloring_name,
-                            subtitleResource = R.string.coloring_card_subtitle,
-                            accessibilityResource = R.string.open_coloring_description,
-                            onClick = onColoringClick,
-                            tabletLayout = true,
-                            modifier = Modifier.weight(1f),
-                        ) { ColoringGameGlyph(Modifier.fillMaxSize()) }
+                        Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+                            GameMenuCard(
+                                labelResource = R.string.tic_tac_toe_name,
+                                subtitleResource = R.string.tic_tac_toe_card_subtitle,
+                                accessibilityResource = R.string.open_tic_tac_toe_description,
+                                onClick = onTicTacToeClick,
+                                tabletLayout = true,
+                                modifier = Modifier.weight(1f),
+                            ) { TicTacToeGameGlyph(Modifier.fillMaxSize()) }
+                            GameMenuCard(
+                                labelResource = R.string.memory_match_name,
+                                subtitleResource = R.string.memory_match_card_subtitle,
+                                accessibilityResource = R.string.open_memory_match_description,
+                                onClick = onMemoryMatchClick,
+                                tabletLayout = true,
+                                modifier = Modifier.weight(1f),
+                            ) { MemoryMatchGameGlyph(Modifier.fillMaxSize()) }
+                        }
+                        Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+                            GameMenuCard(
+                                labelResource = R.string.coloring_name,
+                                subtitleResource = R.string.coloring_card_subtitle,
+                                accessibilityResource = R.string.open_coloring_description,
+                                onClick = onColoringClick,
+                                tabletLayout = true,
+                                modifier = Modifier.weight(1f),
+                            ) { ColoringGameGlyph(Modifier.fillMaxSize()) }
+                            GameMenuCard(
+                                labelResource = R.string.speak_spell_name,
+                                subtitleResource = R.string.speak_spell_card_subtitle,
+                                accessibilityResource = R.string.open_speak_spell_description,
+                                onClick = onSpeakAndSpellClick,
+                                tabletLayout = true,
+                                modifier = Modifier.weight(1f),
+                            ) { SpeakAndSpellGameGlyph(Modifier.fillMaxSize()) }
+                        }
                     }
                 } else {
                     Column(
@@ -144,6 +157,14 @@ fun GamesScreen(
                             tabletLayout = false,
                             modifier = Modifier.fillMaxWidth(),
                         ) { ColoringGameGlyph(Modifier.fillMaxSize()) }
+                        GameMenuCard(
+                            labelResource = R.string.speak_spell_name,
+                            subtitleResource = R.string.speak_spell_card_subtitle,
+                            accessibilityResource = R.string.open_speak_spell_description,
+                            onClick = onSpeakAndSpellClick,
+                            tabletLayout = false,
+                            modifier = Modifier.fillMaxWidth(),
+                        ) { SpeakAndSpellGameGlyph(Modifier.fillMaxSize()) }
                     }
                 }
 
@@ -351,5 +372,34 @@ private fun ColoringGameGlyph(modifier: Modifier = Modifier) {
             strokeWidth = size.minDimension * 0.075f,
             cap = StrokeCap.Round,
         )
+    }
+}
+
+@Composable
+private fun SpeakAndSpellGameGlyph(modifier: Modifier = Modifier) {
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(7.dp, Alignment.CenterHorizontally),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        listOf(
+            "A" to Color(0xFFE060A6),
+            "B" to Color(0xFF6554C0),
+            "C" to Color(0xFF3A91C7),
+        ).forEach { (letter, color) ->
+            Box(
+                modifier = Modifier
+                    .size(54.dp)
+                    .background(color, RoundedCornerShape(15.dp)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = letter,
+                    color = SnowWhite,
+                    fontSize = 31.sp,
+                    fontWeight = FontWeight.Black,
+                )
+            }
+        }
     }
 }
