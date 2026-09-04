@@ -88,7 +88,12 @@ fun AnimalSoundsScreen(
                     .verticalScroll(rememberScrollState())
                     .statusBarsPadding()
                     .navigationBarsPadding()
-                    .padding(horizontal = if (tabletLayout) 24.dp else 16.dp, vertical = 12.dp),
+                    .padding(
+                        start = if (tabletLayout) 24.dp else 16.dp,
+                        top = if (tabletLayout) 8.dp else 12.dp,
+                        end = if (tabletLayout) 24.dp else 16.dp,
+                        bottom = if (tabletLayout) 24.dp else 12.dp,
+                    ),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text(
@@ -105,7 +110,7 @@ fun AnimalSoundsScreen(
                     textAlign = TextAlign.Center,
                 )
                 Box(
-                    modifier = Modifier.height(if (tabletLayout) 70.dp else 58.dp),
+                    modifier = Modifier.height(if (tabletLayout) 54.dp else 58.dp),
                     contentAlignment = Alignment.Center,
                 ) {
                     if (showSoundWord && selectedAnimal != null) {
@@ -129,7 +134,7 @@ fun AnimalSoundsScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .widthIn(max = 920.dp),
-                    verticalArrangement = Arrangement.spacedBy(if (tabletLayout) 16.dp else 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(if (tabletLayout) 10.dp else 12.dp),
                 ) {
                     AnimalSoundsCatalog.animals.chunked(columns).forEach { animalsInRow ->
                         Row(
@@ -161,7 +166,7 @@ fun AnimalSoundsScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(if (tabletLayout) 22.dp else 16.dp))
+                Spacer(modifier = Modifier.height(if (tabletLayout) 14.dp else 16.dp))
                 WinterNavigationButton(
                     labelResource = R.string.back_to_games,
                     onClick = onGamesClick,
@@ -199,7 +204,7 @@ private fun AnimalTile(
     Card(
         onClick = onClick,
         modifier = modifier
-            .heightIn(min = if (tabletLayout) 230.dp else 205.dp)
+            .heightIn(min = if (tabletLayout) 182.dp else 205.dp)
             .graphicsLayer {
                 scaleX = scale.value
                 scaleY = scale.value
@@ -216,7 +221,7 @@ private fun AnimalTile(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(if (tabletLayout) 18.dp else 14.dp),
+                .padding(if (tabletLayout) 10.dp else 14.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {

@@ -66,7 +66,12 @@ fun GamesScreen(
                     .verticalScroll(rememberScrollState())
                     .statusBarsPadding()
                     .navigationBarsPadding()
-                    .padding(horizontal = 22.dp, vertical = 16.dp),
+                    .padding(
+                        start = 22.dp,
+                        top = if (tabletLayout) 8.dp else 16.dp,
+                        end = 22.dp,
+                        bottom = 16.dp,
+                    ),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center,
             ) {
@@ -85,14 +90,14 @@ fun GamesScreen(
                     lineHeight = 24.sp,
                     textAlign = TextAlign.Center,
                 )
-                Spacer(modifier = Modifier.height(if (tabletLayout) 24.dp else 14.dp))
+                Spacer(modifier = Modifier.height(if (tabletLayout) 12.dp else 14.dp))
 
                 if (tabletLayout) {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
                             .widthIn(max = 760.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
                         Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
                             GameMenuCard(
@@ -207,7 +212,7 @@ fun GamesScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(if (tabletLayout) 24.dp else 14.dp))
+                Spacer(modifier = Modifier.height(if (tabletLayout) 12.dp else 14.dp))
                 WinterNavigationButton(
                     labelResource = R.string.back_to_home,
                     onClick = onHomeClick,
@@ -231,7 +236,7 @@ private fun GameMenuCard(
     Card(
         onClick = onClick,
         modifier = modifier
-            .heightIn(min = if (tabletLayout) 350.dp else 148.dp)
+            .heightIn(min = if (tabletLayout) 250.dp else 148.dp)
             .clearAndSetSemantics { contentDescription = description },
         shape = RoundedCornerShape(if (tabletLayout) 30.dp else 24.dp),
         colors = CardDefaults.cardColors(containerColor = SnowWhite.copy(alpha = 0.95f)),
@@ -240,18 +245,19 @@ private fun GameMenuCard(
         if (tabletLayout) {
             Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(24.dp),
+                    .fillMaxSize()
+                    .padding(14.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
             ) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .sizeIn(maxWidth = 190.dp)
+                        .sizeIn(maxWidth = 145.dp)
                         .aspectRatio(1f),
                     contentAlignment = Alignment.Center,
                 ) { glyph() }
-                Spacer(modifier = Modifier.height(14.dp))
+                Spacer(modifier = Modifier.height(7.dp))
                 GameMenuText(labelResource, subtitleResource, tabletLayout = true)
             }
         } else {
