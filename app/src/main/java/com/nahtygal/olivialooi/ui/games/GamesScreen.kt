@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
@@ -52,6 +53,7 @@ fun GamesScreen(
     onColoringClick: () -> Unit,
     onSpeakAndSpellClick: () -> Unit,
     onAnimalSoundsClick: () -> Unit,
+    onCountingClick: () -> Unit,
     onHomeClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -128,18 +130,23 @@ fun GamesScreen(
                                 modifier = Modifier.weight(1f),
                             ) { SpeakAndSpellGameGlyph(Modifier.fillMaxSize()) }
                         }
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.Center,
-                        ) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
                             GameMenuCard(
                                 labelResource = R.string.animal_sounds_name,
                                 subtitleResource = R.string.animal_sounds_card_subtitle,
                                 accessibilityResource = R.string.open_animal_sounds_description,
                                 onClick = onAnimalSoundsClick,
                                 tabletLayout = true,
-                                modifier = Modifier.fillMaxWidth(0.49f),
+                                modifier = Modifier.weight(1f),
                             ) { AnimalSoundsGameGlyph(Modifier.fillMaxSize()) }
+                            GameMenuCard(
+                                labelResource = R.string.counting_name,
+                                subtitleResource = R.string.counting_card_subtitle,
+                                accessibilityResource = R.string.open_counting_description,
+                                onClick = onCountingClick,
+                                tabletLayout = true,
+                                modifier = Modifier.weight(1f),
+                            ) { CountingGameGlyph(Modifier.fillMaxSize()) }
                         }
                     }
                 } else {
@@ -189,6 +196,14 @@ fun GamesScreen(
                             tabletLayout = false,
                             modifier = Modifier.fillMaxWidth(),
                         ) { AnimalSoundsGameGlyph(Modifier.fillMaxSize()) }
+                        GameMenuCard(
+                            labelResource = R.string.counting_name,
+                            subtitleResource = R.string.counting_card_subtitle,
+                            accessibilityResource = R.string.open_counting_description,
+                            onClick = onCountingClick,
+                            tabletLayout = false,
+                            modifier = Modifier.fillMaxWidth(),
+                        ) { CountingGameGlyph(Modifier.fillMaxSize()) }
                     }
                 }
 
@@ -448,6 +463,35 @@ private fun AnimalSoundsGameGlyph(modifier: Modifier = Modifier) {
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Black,
             )
+        }
+    }
+}
+
+@Composable
+private fun CountingGameGlyph(modifier: Modifier = Modifier) {
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        listOf(
+            "1" to Color(0xFFE060A6),
+            "2" to Color(0xFF6554C0),
+            "3" to Color(0xFF3A91C7),
+        ).forEach { (number, color) ->
+            Box(
+                modifier = Modifier
+                    .size(54.dp)
+                    .background(color, CircleShape),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = number,
+                    color = SnowWhite,
+                    fontSize = 31.sp,
+                    fontWeight = FontWeight.Black,
+                )
+            }
         }
     }
 }

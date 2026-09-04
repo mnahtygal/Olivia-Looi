@@ -11,6 +11,7 @@ import androidx.compose.ui.platform.LocalContext
 import com.nahtygal.olivialooi.apps.KidAppLaunchResult
 import com.nahtygal.olivialooi.apps.KidAppLauncher
 import com.nahtygal.olivialooi.games.coloring.ColoringPicture
+import com.nahtygal.olivialooi.games.counting.CountingLevel
 import com.nahtygal.olivialooi.games.memory.MemoryGameSize
 import com.nahtygal.olivialooi.games.spelling.SpellingLevel
 import com.nahtygal.olivialooi.games.tictactoe.TicTacToeGameMode
@@ -19,6 +20,8 @@ import com.nahtygal.olivialooi.ui.games.GamesScreen
 import com.nahtygal.olivialooi.ui.games.animals.AnimalSoundsScreen
 import com.nahtygal.olivialooi.ui.games.coloring.ColoringCanvasScreen
 import com.nahtygal.olivialooi.ui.games.coloring.ColoringPictureScreen
+import com.nahtygal.olivialooi.ui.games.counting.CountingGameScreen
+import com.nahtygal.olivialooi.ui.games.counting.CountingLevelScreen
 import com.nahtygal.olivialooi.ui.games.memory.MemoryMatchGameScreen
 import com.nahtygal.olivialooi.ui.games.memory.MemoryMatchModeScreen
 import com.nahtygal.olivialooi.ui.games.spelling.SpeakAndSpellGameScreen
@@ -40,6 +43,8 @@ private enum class LooLooScreen {
     SpeakAndSpellLevel,
     SpeakAndSpellGame,
     AnimalSounds,
+    CountingLevel,
+    CountingGame,
 }
 
 @Composable
@@ -59,11 +64,15 @@ fun LooLooApp() {
     var spellingLevelName by rememberSaveable {
         mutableStateOf(SpellingLevel.Level1.name)
     }
+    var countingLevelName by rememberSaveable {
+        mutableStateOf(CountingLevel.Level1.name)
+    }
     val screen = enumValueOf<LooLooScreen>(screenName)
     val gameMode = enumValueOf<TicTacToeGameMode>(gameModeName)
     val memoryGameSize = enumValueOf<MemoryGameSize>(memoryGameSizeName)
     val coloringPicture = enumValueOf<ColoringPicture>(coloringPictureName)
     val spellingLevel = enumValueOf<SpellingLevel>(spellingLevelName)
+    val countingLevel = enumValueOf<CountingLevel>(countingLevelName)
 
     fun navigateTo(destination: LooLooScreen) {
         screenName = destination.name
@@ -81,6 +90,8 @@ fun LooLooApp() {
                 LooLooScreen.SpeakAndSpellGame -> LooLooScreen.SpeakAndSpellLevel
                 LooLooScreen.SpeakAndSpellLevel -> LooLooScreen.Games
                 LooLooScreen.AnimalSounds -> LooLooScreen.Games
+                LooLooScreen.CountingGame -> LooLooScreen.CountingLevel
+                LooLooScreen.CountingLevel -> LooLooScreen.Games
                 LooLooScreen.Games -> LooLooScreen.Home
                 LooLooScreen.Apps -> LooLooScreen.Home
                 LooLooScreen.Home -> LooLooScreen.Home
@@ -107,6 +118,7 @@ fun LooLooApp() {
             onColoringClick = { navigateTo(LooLooScreen.ColoringPictures) },
             onSpeakAndSpellClick = { navigateTo(LooLooScreen.SpeakAndSpellLevel) },
             onAnimalSoundsClick = { navigateTo(LooLooScreen.AnimalSounds) },
+            onCountingClick = { navigateTo(LooLooScreen.CountingLevel) },
             onHomeClick = { navigateTo(LooLooScreen.Home) },
         )
 
@@ -168,6 +180,20 @@ fun LooLooApp() {
 
         LooLooScreen.AnimalSounds -> AnimalSoundsScreen(
             onGamesClick = { navigateTo(LooLooScreen.Games) },
+        )
+
+        LooLooScreen.CountingLevel -> CountingLevelScreen(
+            onLevelSelected = { selectedLevel ->
+                countingLevelName = selectedLevel.name
+                navigateTo(LooLooScreen.CountingGame)
+            },
+            onGamesClick = { navigateTo(LooLooScreen.Games) },
+        )
+
+        LooLooScreen.CountingGame -> CountingGameScreen(
+            level = countingLevel,
+            onPickAnotherLevelClick = { navigateTo(LooLooScreen.CountingLevel) },
+            onBackToGamesClick = { navigateTo(LooLooScreen.Games) },
         )
     }
 }
