@@ -13,12 +13,15 @@ import com.nahtygal.olivialooi.apps.KidAppLaunchResult
 import com.nahtygal.olivialooi.apps.KidAppLauncher
 import com.nahtygal.olivialooi.games.coloring.ColoringPicture
 import com.nahtygal.olivialooi.games.counting.CountingLevel
+import com.nahtygal.olivialooi.games.abc.AbcMode
 import com.nahtygal.olivialooi.games.memory.MemoryGameSize
 import com.nahtygal.olivialooi.games.math.MathLevel
 import com.nahtygal.olivialooi.games.spelling.SpellingLevel
 import com.nahtygal.olivialooi.games.tictactoe.TicTacToeGameMode
 import com.nahtygal.olivialooi.ui.apps.AppsScreen
 import com.nahtygal.olivialooi.ui.games.GamesScreen
+import com.nahtygal.olivialooi.ui.games.abc.AbcActivityScreen
+import com.nahtygal.olivialooi.ui.games.abc.AbcAdventureScreen
 import com.nahtygal.olivialooi.ui.games.animals.AnimalSoundsScreen
 import com.nahtygal.olivialooi.ui.games.coloring.ColoringCanvasScreen
 import com.nahtygal.olivialooi.ui.games.coloring.ColoringPictureScreen
@@ -51,6 +54,8 @@ private enum class LooLooScreen {
     CountingGame,
     MathLevel,
     MathGame,
+    AbcAdventure,
+    AbcActivity,
 }
 
 @Composable
@@ -75,6 +80,8 @@ fun LooLooApp() {
     }
     var mathLevelName by rememberSaveable { mutableStateOf(MathLevel.SINGLE_DIGIT.name) }
     var mathSessionId by rememberSaveable { mutableIntStateOf(0) }
+    var abcModeName by rememberSaveable { mutableStateOf(AbcMode.LEARN.name) }
+    var abcSessionId by rememberSaveable { mutableIntStateOf(0) }
     val screen = enumValueOf<LooLooScreen>(screenName)
     val gameMode = enumValueOf<TicTacToeGameMode>(gameModeName)
     val memoryGameSize = enumValueOf<MemoryGameSize>(memoryGameSizeName)
@@ -82,6 +89,7 @@ fun LooLooApp() {
     val spellingLevel = enumValueOf<SpellingLevel>(spellingLevelName)
     val countingLevel = enumValueOf<CountingLevel>(countingLevelName)
     val mathLevel = enumValueOf<MathLevel>(mathLevelName)
+    val abcMode = enumValueOf<AbcMode>(abcModeName)
 
     fun navigateTo(destination: LooLooScreen) {
         screenName = destination.name
@@ -103,6 +111,8 @@ fun LooLooApp() {
                 LooLooScreen.CountingLevel -> LooLooScreen.Games
                 LooLooScreen.MathGame -> LooLooScreen.MathLevel
                 LooLooScreen.MathLevel -> LooLooScreen.Games
+                LooLooScreen.AbcActivity -> LooLooScreen.AbcAdventure
+                LooLooScreen.AbcAdventure -> LooLooScreen.Games
                 LooLooScreen.Games -> LooLooScreen.Home
                 LooLooScreen.Apps -> LooLooScreen.Home
                 LooLooScreen.Home -> LooLooScreen.Home
@@ -131,6 +141,7 @@ fun LooLooApp() {
             onAnimalSoundsClick = { navigateTo(LooLooScreen.AnimalSounds) },
             onCountingClick = { navigateTo(LooLooScreen.CountingLevel) },
             onMathClick = { navigateTo(LooLooScreen.MathLevel) },
+            onAbcClick = { navigateTo(LooLooScreen.AbcAdventure) },
             onHomeClick = { navigateTo(LooLooScreen.Home) },
         )
 
@@ -221,6 +232,22 @@ fun LooLooApp() {
             level = mathLevel,
             sessionId = mathSessionId,
             onPickAnotherLevelClick = { navigateTo(LooLooScreen.MathLevel) },
+            onBackToGamesClick = { navigateTo(LooLooScreen.Games) },
+        )
+
+        LooLooScreen.AbcAdventure -> AbcAdventureScreen(
+            onModeSelected = { selectedMode ->
+                abcModeName = selectedMode.name
+                abcSessionId += 1
+                navigateTo(LooLooScreen.AbcActivity)
+            },
+            onGamesClick = { navigateTo(LooLooScreen.Games) },
+        )
+
+        LooLooScreen.AbcActivity -> AbcActivityScreen(
+            mode = abcMode,
+            sessionId = abcSessionId,
+            onPickAnotherAdventureClick = { navigateTo(LooLooScreen.AbcAdventure) },
             onBackToGamesClick = { navigateTo(LooLooScreen.Games) },
         )
     }

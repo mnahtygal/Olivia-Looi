@@ -55,6 +55,7 @@ fun GamesScreen(
     onAnimalSoundsClick: () -> Unit,
     onCountingClick: () -> Unit,
     onMathClick: () -> Unit,
+    onAbcClick: () -> Unit,
     onHomeClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -163,7 +164,14 @@ fun GamesScreen(
                                 tabletLayout = true,
                                 modifier = Modifier.weight(1f),
                             ) { MathGameGlyph(Modifier.fillMaxSize()) }
-                            Spacer(modifier = Modifier.weight(1f))
+                            GameMenuCard(
+                                labelResource = R.string.abc_name,
+                                subtitleResource = R.string.abc_card_subtitle,
+                                accessibilityResource = R.string.open_abc_description,
+                                onClick = onAbcClick,
+                                tabletLayout = true,
+                                modifier = Modifier.weight(1f),
+                            ) { AbcGameGlyph(Modifier.fillMaxSize()) }
                         }
                     }
                 } else {
@@ -229,6 +237,14 @@ fun GamesScreen(
                             tabletLayout = false,
                             modifier = Modifier.fillMaxWidth(),
                         ) { MathGameGlyph(Modifier.fillMaxSize()) }
+                        GameMenuCard(
+                            labelResource = R.string.abc_name,
+                            subtitleResource = R.string.abc_card_subtitle,
+                            accessibilityResource = R.string.open_abc_description,
+                            onClick = onAbcClick,
+                            tabletLayout = false,
+                            modifier = Modifier.fillMaxWidth(),
+                        ) { AbcGameGlyph(Modifier.fillMaxSize()) }
                     }
                 }
 
@@ -540,6 +556,35 @@ private fun MathGameGlyph(modifier: Modifier = Modifier) {
                 lineHeight = 35.sp,
                 fontWeight = FontWeight.Black,
             )
+        }
+    }
+}
+
+@Composable
+private fun AbcGameGlyph(modifier: Modifier = Modifier) {
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(7.dp, Alignment.CenterHorizontally),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        listOf(
+            "A" to Color(0xFFE060A6),
+            "B" to Color(0xFF6554C0),
+            "C" to Color(0xFF3A91C7),
+        ).forEach { (letter, color) ->
+            Box(
+                modifier = Modifier
+                    .size(54.dp)
+                    .background(color, RoundedCornerShape(15.dp)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = letter,
+                    color = SnowWhite,
+                    fontSize = 31.sp,
+                    fontWeight = FontWeight.Black,
+                )
+            }
         }
     }
 }
