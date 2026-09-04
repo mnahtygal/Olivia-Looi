@@ -16,21 +16,31 @@ data class AnimalSound(
     val id: AnimalId,
     val displayName: String,
     val visualSymbol: String,
-    val spokenPhrase: String,
     val soundWord: String,
     val localAudioAssetName: String,
-)
+) {
+    val spokenPhrase: String
+        get() {
+            val sound = soundWord.removeSuffix("!").lowercase()
+            val spokenSound = if (id in repeatedSoundAnimals) "$sound $sound" else sound
+            return "The ${displayName.lowercase()} says $spokenSound!"
+        }
+
+    private companion object {
+        val repeatedSoundAnimals = setOf(AnimalId.Dog, AnimalId.Pig, AnimalId.Duck)
+    }
+}
 
 object AnimalSoundsCatalog {
     val animals: List<AnimalSound> = listOf(
-        AnimalSound(AnimalId.Cow, "Cow", "🐮", "The cow says...", "Moo!", "animal_cow_moo"),
-        AnimalSound(AnimalId.Dog, "Dog", "🐶", "The dog says...", "Woof!", "animal_dog_bark"),
-        AnimalSound(AnimalId.Cat, "Cat", "🐱", "The cat says...", "Meow!", "animal_cat_meow"),
-        AnimalSound(AnimalId.Pig, "Pig", "🐷", "The pig says...", "Oink!", "animal_pig_oink"),
-        AnimalSound(AnimalId.Duck, "Duck", "🦆", "The duck says...", "Quack!", "animal_duck_quack"),
-        AnimalSound(AnimalId.Sheep, "Sheep", "🐑", "The sheep says...", "Baa!", "animal_sheep_baa"),
-        AnimalSound(AnimalId.Horse, "Horse", "🐴", "The horse says...", "Neigh!", "animal_horse_neigh"),
-        AnimalSound(AnimalId.Frog, "Frog", "🐸", "The frog says...", "Ribbit!", "animal_frog_ribbit"),
+        AnimalSound(AnimalId.Cow, "Cow", "🐮", "Moo!", "animal_cow_moo"),
+        AnimalSound(AnimalId.Dog, "Dog", "🐶", "Woof!", "animal_dog_bark"),
+        AnimalSound(AnimalId.Cat, "Cat", "🐱", "Meow!", "animal_cat_meow"),
+        AnimalSound(AnimalId.Pig, "Pig", "🐷", "Oink!", "animal_pig_oink"),
+        AnimalSound(AnimalId.Duck, "Duck", "🦆", "Quack!", "animal_duck_quack"),
+        AnimalSound(AnimalId.Sheep, "Sheep", "🐑", "Baa!", "animal_sheep_baa"),
+        AnimalSound(AnimalId.Horse, "Horse", "🐴", "Neigh!", "animal_horse_neigh"),
+        AnimalSound(AnimalId.Frog, "Frog", "🐸", "Ribbit!", "animal_frog_ribbit"),
     )
 
     fun findById(stableId: String): AnimalSound? =

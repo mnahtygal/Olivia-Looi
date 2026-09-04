@@ -51,14 +51,14 @@ class AnimalSoundsCatalogTest {
     @Test
     fun `each animal has its expected toddler phrase`() {
         val expectedPhrases = mapOf(
-            AnimalId.Cow to "The cow says...",
-            AnimalId.Dog to "The dog says...",
-            AnimalId.Cat to "The cat says...",
-            AnimalId.Pig to "The pig says...",
-            AnimalId.Duck to "The duck says...",
-            AnimalId.Sheep to "The sheep says...",
-            AnimalId.Horse to "The horse says...",
-            AnimalId.Frog to "The frog says...",
+            AnimalId.Cow to "The cow says moo!",
+            AnimalId.Dog to "The dog says woof woof!",
+            AnimalId.Cat to "The cat says meow!",
+            AnimalId.Pig to "The pig says oink oink!",
+            AnimalId.Duck to "The duck says quack quack!",
+            AnimalId.Sheep to "The sheep says baa!",
+            AnimalId.Horse to "The horse says neigh!",
+            AnimalId.Frog to "The frog says ribbit!",
         )
 
         assertEquals(
