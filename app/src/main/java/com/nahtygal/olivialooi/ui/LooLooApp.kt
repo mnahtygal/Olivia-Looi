@@ -10,9 +10,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import com.nahtygal.olivialooi.apps.KidAppLaunchResult
 import com.nahtygal.olivialooi.apps.KidAppLauncher
+import com.nahtygal.olivialooi.games.memory.MemoryGameSize
 import com.nahtygal.olivialooi.games.tictactoe.TicTacToeGameMode
 import com.nahtygal.olivialooi.ui.apps.AppsScreen
 import com.nahtygal.olivialooi.ui.games.GamesScreen
+import com.nahtygal.olivialooi.ui.games.memory.MemoryMatchGameScreen
+import com.nahtygal.olivialooi.ui.games.memory.MemoryMatchModeScreen
 import com.nahtygal.olivialooi.ui.games.tictactoe.TicTacToeGameScreen
 import com.nahtygal.olivialooi.ui.games.tictactoe.TicTacToeModeScreen
 import com.nahtygal.olivialooi.ui.home.LooLooHomeScreen
@@ -23,6 +26,8 @@ private enum class LooLooScreen {
     Games,
     TicTacToeMode,
     TicTacToeGame,
+    MemoryMatchMode,
+    MemoryMatchGame,
 }
 
 @Composable
@@ -33,8 +38,12 @@ fun LooLooApp() {
     var gameModeName by rememberSaveable {
         mutableStateOf(TicTacToeGameMode.PersonVsPerson.name)
     }
+    var memoryGameSizeName by rememberSaveable {
+        mutableStateOf(MemoryGameSize.Little.name)
+    }
     val screen = enumValueOf<LooLooScreen>(screenName)
     val gameMode = enumValueOf<TicTacToeGameMode>(gameModeName)
+    val memoryGameSize = enumValueOf<MemoryGameSize>(memoryGameSizeName)
 
     fun navigateTo(destination: LooLooScreen) {
         screenName = destination.name
@@ -45,6 +54,8 @@ fun LooLooApp() {
             when (screen) {
                 LooLooScreen.TicTacToeGame -> LooLooScreen.TicTacToeMode
                 LooLooScreen.TicTacToeMode -> LooLooScreen.Games
+                LooLooScreen.MemoryMatchGame -> LooLooScreen.MemoryMatchMode
+                LooLooScreen.MemoryMatchMode -> LooLooScreen.Games
                 LooLooScreen.Games -> LooLooScreen.Home
                 LooLooScreen.Apps -> LooLooScreen.Home
                 LooLooScreen.Home -> LooLooScreen.Home
@@ -67,6 +78,7 @@ fun LooLooApp() {
 
         LooLooScreen.Games -> GamesScreen(
             onTicTacToeClick = { navigateTo(LooLooScreen.TicTacToeMode) },
+            onMemoryMatchClick = { navigateTo(LooLooScreen.MemoryMatchMode) },
             onHomeClick = { navigateTo(LooLooScreen.Home) },
         )
 
@@ -82,6 +94,20 @@ fun LooLooApp() {
             gameMode = gameMode,
             onChangeModeClick = { navigateTo(LooLooScreen.TicTacToeMode) },
             onHomeClick = { navigateTo(LooLooScreen.Home) },
+        )
+
+        LooLooScreen.MemoryMatchMode -> MemoryMatchModeScreen(
+            onSizeSelected = { selectedSize ->
+                memoryGameSizeName = selectedSize.name
+                navigateTo(LooLooScreen.MemoryMatchGame)
+            },
+            onGamesClick = { navigateTo(LooLooScreen.Games) },
+        )
+
+        LooLooScreen.MemoryMatchGame -> MemoryMatchGameScreen(
+            gameSize = memoryGameSize,
+            onPickAnotherGameClick = { navigateTo(LooLooScreen.MemoryMatchMode) },
+            onBackToGamesClick = { navigateTo(LooLooScreen.Games) },
         )
     }
 }

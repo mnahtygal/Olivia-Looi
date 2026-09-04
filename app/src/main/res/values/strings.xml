@@ -46,8 +46,45 @@
     <string name="games_subtitle">What would you like to play?</string>
     <string name="tic_tac_toe_name">Tic-Tac-Toe</string>
     <string name="tic_tac_toe_card_subtitle">Three in a row wins!</string>
+    <string name="open_tic_tac_toe_description">Play Tic-Tac-Toe</string>
+    <string name="memory_match_name">Memory Match</string>
+    <string name="memory_match_card_subtitle">Find the matching pairs!</string>
+    <string name="open_memory_match_description">Play Memory Match</string>
     <string name="back_to_home">Back to Home</string>
+    <string name="back_to_games">Back to Games</string>
     <string name="home_action">Home</string>
+
+    <string name="memory_match_mode_subtitle">Pick a game!</string>
+    <string name="memory_little_game">LITTLE GAME</string>
+    <string name="memory_little_pairs">3 pairs</string>
+    <string name="memory_little_cards">6 cards</string>
+    <string name="memory_little_description">Find 3 matching pairs!</string>
+    <string name="memory_little_accessibility">Little Game, 3 pairs, 6 cards</string>
+    <string name="memory_big_game">BIG GAME</string>
+    <string name="memory_big_pairs">6 pairs</string>
+    <string name="memory_big_cards">12 cards</string>
+    <string name="memory_big_description">Find 6 matching pairs!</string>
+    <string name="memory_big_accessibility">Big Game, 6 pairs, 12 cards</string>
+    <plurals name="memory_match_progress">
+        <item quantity="one">%1$d of %2$d pair found</item>
+        <item quantity="other">%1$d of %2$d pairs found</item>
+    </plurals>
+    <string name="memory_complete_heading">You found them all!</string>
+    <string name="memory_complete_subtitle">Great job, Olivia!</string>
+    <string name="pick_another_game">Pick Another Game</string>
+    <string name="memory_match_speech">You found a match!</string>
+    <string name="memory_mismatch_speech">Almost! Try again.</string>
+    <string name="memory_complete_speech">You found them all! Great job, Olivia!</string>
+    <string name="memory_card_description">%1$s card, %2$s</string>
+    <string name="memory_card_hidden">hidden</string>
+    <string name="memory_card_revealed">revealed</string>
+    <string name="memory_card_matched">matched</string>
+    <string name="memory_cow">Cow</string>
+    <string name="memory_butterfly">Butterfly</string>
+    <string name="memory_star">Star</string>
+    <string name="memory_puppy">Puppy</string>
+    <string name="memory_flower">Flower</string>
+    <string name="memory_car">Car</string>
 
     <string name="tic_tac_toe_mode_heading">Who would you like to play with?</string>
     <string name="tic_tac_toe_mode_subtitle">Choose your Tic-Tac-Toe game mode</string>
