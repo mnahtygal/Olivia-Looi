@@ -421,4 +421,23 @@
         <item quantity="one">Song: %1$d note complete</item>
         <item quantity="other">Song: %1$d notes complete</item>
     </plurals>
+    <string name="drums_name">LooLoo Drums</string>
+    <string name="drums_card_subtitle">Let’s make a beat!</string>
+    <string name="drums_open_description">Play LooLoo Drums</string>
+    <string name="drums_free">Free Play</string>
+    <string name="drums_copy">Copy the Beat</string>
+    <string name="drums_opening">Let’s play the drums!</string>
+    <string name="drums_your_turn">Your turn!</string>
+    <string name="drums_retry">Almost! Let’s try that beat again.</string>
+    <string name="drums_great_beat">Great beat!</string>
+    <string name="drums_complete">Great drumming, Olivia!</string>
+    <string name="drums_round">Round %1$d of 5</string>
+    <string name="drums_listen">Listen to the beat!</string>
+    <string name="drums_progress">Beat progress: %1$d / %2$d</string>
+    <string name="drums_loading">Getting the drums ready…</string>
+    <string name="drums_unavailable">Drum sound is unavailable. You can still follow the flashing pads.</string>
+    <string name="drums_pressed">Pressed</string>
+    <string name="drums_more">Play More Beats</string>
+    <string name="drums_next">Next Beat</string>
+    <string name="drums_hear">🔊 Hear Beat Again</string>
 </resources>

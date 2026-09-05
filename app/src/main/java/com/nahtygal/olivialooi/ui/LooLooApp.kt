@@ -1,6 +1,7 @@
 package com.nahtygal.olivialooi.ui
 
 import com.nahtygal.olivialooi.ui.games.piano.PianoScreen
+import com.nahtygal.olivialooi.ui.games.drums.DrumScreen
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -71,6 +72,7 @@ private enum class LooLooScreen {
     PuzzleDifficulty,
     PuzzleBoard,
     Piano,
+    Drums,
 }
 
 @Composable
@@ -131,6 +133,7 @@ fun LooLooApp() {
                 LooLooScreen.CountingLevel -> LooLooScreen.Games
                 LooLooScreen.MathGame -> LooLooScreen.MathLevel
                 LooLooScreen.MathLevel -> LooLooScreen.Games
+                LooLooScreen.Drums -> LooLooScreen.Games
                 LooLooScreen.Piano -> LooLooScreen.Games
                 LooLooScreen.PuzzleBoard -> LooLooScreen.PuzzleDifficulty
                 LooLooScreen.PuzzleDifficulty -> LooLooScreen.PuzzlePictures
@@ -167,6 +170,7 @@ fun LooLooApp() {
             onAnimalSoundsClick = { navigateTo(LooLooScreen.AnimalSounds) },
             onCountingClick = { navigateTo(LooLooScreen.CountingLevel) },
             onMathClick = { navigateTo(LooLooScreen.MathLevel) },
+            onDrumsClick = { navigateTo(LooLooScreen.Drums) },
             onPianoClick = { navigateTo(LooLooScreen.Piano) },
             onPuzzlesClick = { navigateTo(LooLooScreen.PuzzlePictures) },
             onShapesClick = { navigateTo(LooLooScreen.ShapesAdventure) },
@@ -263,6 +267,8 @@ fun LooLooApp() {
             onPickAnotherLevelClick = { navigateTo(LooLooScreen.MathLevel) },
             onBackToGamesClick = { navigateTo(LooLooScreen.Games) },
         )
+
+        LooLooScreen.Drums -> DrumScreen(onGamesClick = { navigateTo(LooLooScreen.Games) })
 
         LooLooScreen.Piano -> PianoScreen(
             onGamesClick = { navigateTo(LooLooScreen.Games) },
