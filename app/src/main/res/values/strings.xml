@@ -25,7 +25,7 @@
     <string name="looloo_recognition_error_message">I couldn’t understand that. Let’s try again!</string>
     <string name="looloo_ready_content_description">LooLoo is ready</string>
     <string name="looloo_listening_content_description">LooLoo is listening</string>
-    <string name="looloo_avatar_content_description">Olivia smiling and holding up two peace signs</string>
+    <string name="looloo_avatar_content_description">Olivia and Eliana together on the LooLoo home screen.</string>
     <string name="looloo_microphone_level_content_description">Microphone level: %1$d%%</string>
     <string name="looloo_settings_content_description">Open LooLoo settings</string>
     <string name="looloo_microphone_permission_message">I need the microphone so I can hear you.</string>

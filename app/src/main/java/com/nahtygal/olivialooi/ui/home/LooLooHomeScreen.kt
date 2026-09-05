@@ -15,12 +15,12 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -383,7 +383,7 @@ private fun LooLooHomeContent(
         HomeSpeechState.Ready -> R.string.looloo_talk_action
     }
 
-    Box(
+    BoxWithConstraints(
         modifier = modifier
             .fillMaxSize()
             .background(
@@ -394,15 +394,23 @@ private fun LooLooHomeContent(
                         1f to SkyBlue,
                     ),
                 ),
-            ),
+            )
+            .statusBarsPadding()
+            .navigationBarsPadding(),
     ) {
+        // Keep the portrait artwork readable; extra speech content scrolls instead
+        // of squeezing the girls or the functional controls into the remaining space.
+        val heroWidth = if (maxWidth >= 600.dp) {
+            minOf(maxWidth - 40.dp, (maxHeight - 300.dp).coerceAtLeast(480.dp) * LOOLOO_IMAGE_ASPECT_RATIO)
+        } else {
+            maxWidth - 40.dp
+        }
         WinterBackdrop(modifier = Modifier.fillMaxSize())
 
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .statusBarsPadding()
-                .navigationBarsPadding()
+                .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp, vertical = 8.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
@@ -426,14 +434,13 @@ private fun LooLooHomeContent(
 
             Box(
                 modifier = Modifier
-                    .weight(1f)
                     .fillMaxWidth()
-                    .padding(top = 2.dp),
+                    .padding(top = 8.dp, bottom = 16.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 LooLooAvatar(
                     modifier = Modifier
-                        .fillMaxHeight()
+                        .width(heroWidth)
                         .aspectRatio(LOOLOO_IMAGE_ASPECT_RATIO),
                 )
             }
@@ -521,7 +528,7 @@ private fun LooLooHomeContent(
 private fun LooLooAvatar(modifier: Modifier = Modifier) {
     val shape = RoundedCornerShape(28.dp)
     Image(
-        painter = painterResource(R.drawable.looloo_character),
+        painter = painterResource(R.drawable.looloo_home_olivia_eliana),
         contentDescription = stringResource(R.string.looloo_avatar_content_description),
         modifier = modifier
             .clip(shape)
@@ -530,7 +537,7 @@ private fun LooLooAvatar(modifier: Modifier = Modifier) {
     )
 }
 
-private const val LOOLOO_IMAGE_ASPECT_RATIO = 1199f / 1312f
+private const val LOOLOO_IMAGE_ASPECT_RATIO = 1145f / 1374f
 
 @Composable
 private fun LooLooStatus(
@@ -881,6 +888,8 @@ private fun WinterBackdrop(modifier: Modifier = Modifier) {
     }
 }
 
+@Preview(name = "Ready · Samsung SM-X610 portrait", showBackground = true, widthDp = 800, heightDp = 1280)
+@Preview(name = "Ready · Galaxy S22 portrait", showBackground = true, widthDp = 360, heightDp = 780)
 @Preview(
     name = "Ready · Small phone",
     showBackground = true,
