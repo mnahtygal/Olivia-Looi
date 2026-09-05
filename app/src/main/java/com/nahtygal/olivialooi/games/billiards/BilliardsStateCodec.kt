@@ -1,11 +1,12 @@
 package com.nahtygal.olivialooi.games.billiards
 
-/** Live velocities and pending AI plans are preserved. The fixed-step loop resumes only
+/** Version 2 requires the full 16-ball table; incompatible version 1 sessions fail safely.
+ * Live velocities and pending AI plans are preserved. The fixed-step loop resumes only
  * in the foreground, so recreation neither settles a turn early nor replans an AI shot.
  */
 object BilliardsStateCodec {
     fun encode(s: BilliardsState): String = listOf(
-        "1", s.mode.name, s.turn.name,
+        "2", s.mode.name, s.turn.name,
         s.oliviaBalls.sortedBy { it.number }.joinToString(",") { it.number.toString() },
         s.looLooBalls.sortedBy { it.number }.joinToString(",") { it.number.toString() },
         s.shotActive, s.turnIdentity, s.selectedBall?.number?.toString().orEmpty(),
@@ -17,7 +18,7 @@ object BilliardsStateCodec {
 
     fun decode(payload: String): BilliardsState? = runCatching {
         val f = payload.split('|')
-        require(f.size == 17 && f[0] == "1")
+        require(f.size == 17 && f[0] == "2")
         fun id(value: String): BallId = BallId.entries.first { it.number == value.toInt() }
         fun ids(value: String): Set<BallId> = if (value.isEmpty()) emptySet() else value.split(',').map(::id).toSet()
         val balls = f[16].split(';').map { raw ->
@@ -39,10 +40,11 @@ object BilliardsStateCodec {
             completedRounds = f[10].toInt(), roundComplete = f[11].toBooleanStrict(), sessionComplete = f[12].toBooleanStrict(),
             targetSucceeded = f[13].toBooleanStrict(), outcome = ShotOutcome.valueOf(f[14]), aimGuide = f[15].toBooleanStrict(),
         )
-        require(balls.size == 10 && balls.map { it.id }.toSet().size == 10)
+        require(balls.size == 16 && balls.map { it.id }.toSet().size == 16)
         require(s.turnIdentity >= 0 && s.completedRounds in 0..5)
         require(s.oliviaBalls.intersect(s.looLooBalls).isEmpty())
         require(BallId.CUE !in s.oliviaBalls + s.looLooBalls)
+        require((s.oliviaBalls + s.looLooBalls).size <= 15)
         require((s.oliviaBalls + s.looLooBalls).all { owner -> balls.any { it.id == owner && it.pocketed } })
         require(balls.all { it.radius == 24.0 && (it.pocketId == null || it.pocketId in 0..5) && it.velocity.length() <= BilliardsPhysics.MAX_SPEED * 1.5 })
         require(balls.all { if (it.pocketed) it.velocity == Vec2.ZERO else it.position.x in 24.0..576.0 && it.position.y in 24.0..976.0 })

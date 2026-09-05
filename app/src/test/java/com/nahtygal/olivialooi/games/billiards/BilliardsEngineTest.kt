@@ -75,10 +75,10 @@ class BilliardsEngineTest {
         assertEquals(TurnOwner.OLIVIA,done.turn)
         assertTrue(done.childCanShoot)
     }
-    @Test fun `nine objects finish match and prevent further shots`() {
+    @Test fun `fifteen objects finish match and prevent further shots`() {
         val done=capture(fresh(),BallId.entries.filter { it!=BallId.CUE }.toSet())
         assertTrue(done.sessionComplete)
-        assertEquals(9,done.oliviaBalls.size)
+        assertEquals(15,done.oliviaBalls.size)
         assertFalse(done.childCanShoot)
         assertSame(done,BilliardsEngine.shoot(done,shot))
         assertSame(done,BilliardsEngine.tick(done,.1))

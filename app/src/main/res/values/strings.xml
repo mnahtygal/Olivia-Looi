@@ -457,7 +457,7 @@
     <string name="billiards_target">Roll ball %1$s into the highlighted pocket</string>
     <string name="billiards_rolling">Balls are rolling…</string>
     <string name="billiards_friendly">Friendly LooLoo is aiming…</string>
-    <string name="billiards_instructions">Touch a ball, drag toward a pocket, then let go.</string>
+    <string name="billiards_instructions">Touch a ball, pull back, then let go to shoot the other way.</string>
     <string name="billiards_aim_on">Aim Guide: ON</string>
     <string name="billiards_aim_off">Aim Guide: OFF</string>
     <string name="billiards_rack">Rack / New Balls</string>

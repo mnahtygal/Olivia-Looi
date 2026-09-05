@@ -19,7 +19,8 @@ data class Vec2(val x: Double, val y: Double) {
 enum class BallId(val number: Int, val visualIdentity: String) {
     CUE(0, "white"), ONE(1, "yellow"), TWO(2, "blue"), THREE(3, "red"),
     FOUR(4, "purple"), FIVE(5, "orange"), SIX(6, "green"), SEVEN(7, "pink"),
-    EIGHT(8, "charcoal"), NINE(9, "cyan");
+    EIGHT(8, "charcoal"), NINE(9, "cyan"), TEN(10, "sky blue"), ELEVEN(11, "coral"),
+    TWELVE(12, "lavender"), THIRTEEN(13, "amber"), FOURTEEN(14, "mint"), FIFTEEN(15, "burgundy");
     val description: String get() = if (this == CUE) "Cue ball" else "$number ball"
 }
 
@@ -62,20 +63,22 @@ object BilliardsPhysics {
     )
 
     fun rack(): TableState {
-        val positions = listOf(
-            Vec2(300.0, 780.0), Vec2(300.0, 230.0),
-            Vec2(274.0, 277.0), Vec2(326.0, 277.0),
-            Vec2(248.0, 324.0), Vec2(300.0, 324.0), Vec2(352.0, 324.0),
-            Vec2(222.0, 371.0), Vec2(274.0, 371.0), Vec2(326.0, 371.0),
-        )
+        val positions = buildList {
+            add(Vec2(300.0, 780.0))
+            // Five centered rows, with 53-unit horizontal and 47-unit vertical spacing.
+            // Adjacent centers remain farther apart than the unchanged 48-unit diameter.
+            for (row in 0 until 5) for (column in 0..row) {
+                add(Vec2(300.0 + (column - row / 2.0) * 53.0, 230.0 + row * 47.0))
+            }
+        }
         return TableState(BallId.entries.map { Ball(it, positions[it.number]) })
     }
 
-    /** Drag toward the intended direction. A tap/near-zero drag launches nothing. */
+    /** Pull back opposite the intended direction. A tap/near-zero drag launches nothing. */
     fun shotFromDrag(ballId: BallId, drag: Vec2): BallShot? {
         val distance = drag.length()
         if (distance < 5.0) return null
-        return BallShot(ballId, drag.normalized(), (distance * 3.0).coerceIn(MIN_SPEED, MAX_SPEED))
+        return BallShot(ballId, drag.normalized() * -1.0, (distance * 3.0).coerceIn(MIN_SPEED, MAX_SPEED))
     }
 
     fun launch(table: TableState, shot: BallShot): TableState {

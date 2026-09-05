@@ -7,11 +7,11 @@ import org.junit.Test
 class BilliardsPhysicsTest {
     private fun ball(x: Double = 300.0, y: Double = 500.0, vx: Double = 0.0, vy: Double = 0.0, id: BallId = BallId.CUE) = Ball(id, Vec2(x,y), Vec2(vx,vy))
     private fun step(ball: Ball, dt: Double = .05) = BilliardsPhysics.advance(TableState(listOf(ball)), dt).table.balls.single()
-    @Test fun `rack has ten balls including cue and unique one through nine`() {
+    @Test fun `rack has sixteen balls including cue and unique one through fifteen`() {
         val table = BilliardsPhysics.rack()
-        assertEquals(10, table.balls.size)
-        assertEquals((0..9).toList(), table.balls.map { it.id.number })
-        assertEquals(10, table.balls.map { it.id }.toSet().size)
+        assertEquals(16, table.balls.size)
+        assertEquals((0..15).toList(), table.balls.map { it.id.number })
+        assertEquals(16, table.balls.map { it.id }.toSet().size)
         assertEquals("white", BallId.CUE.visualIdentity)
     }
     @Test fun `six distinct pockets`() {
@@ -132,7 +132,7 @@ class BilliardsPhysicsTest {
     @Test fun `drag controls direction and distance controls power`() {
         val small=BilliardsPhysics.shotFromDrag(BallId.ONE,Vec2(30.0,40.0))!!
         val large=BilliardsPhysics.shotFromDrag(BallId.ONE,Vec2(60.0,80.0))!!
-        assertEquals(Vec2(.6,.8),small.direction)
+        assertEquals(Vec2(-.6,-.8),small.direction)
         assertTrue(large.power>small.power)
     }
     @Test fun `shot power clamps minimum and maximum`() {

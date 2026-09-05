@@ -330,7 +330,7 @@ private fun PoolTable(state: BilliardsState, foreground: Boolean, epoch: Int, mo
                     }
                 }
                 val aimingId = state.pendingAi?.ballId ?: state.selectedBall
-                val vector = state.pendingAi?.let { it.direction * (it.power / 3) } ?: drag
+                val vector = state.pendingAi?.let { it.direction * (it.power / 3) } ?: drag?.let { it * -1.0 }
                 val aimingBall = state.table.balls.firstOrNull { it.id == aimingId }
                 if (aimingBall != null && vector != null && vector.length() > 1) {
                     // Power stays visible even when the dotted aim guide is off.
@@ -398,6 +398,12 @@ private fun ballColor(id: BallId): Color = when (id) {
     BallId.SEVEN -> Color(0xFFF27DBB)
     BallId.EIGHT -> Color(0xFF343341)
     BallId.NINE -> Color(0xFF52D6E7)
+    BallId.TEN -> Color(0xFF79B9FF)
+    BallId.ELEVEN -> Color(0xFFFF8173)
+    BallId.TWELVE -> Color(0xFFC19BEF)
+    BallId.THIRTEEN -> Color(0xFFE9B13C)
+    BallId.FOURTEEN -> Color(0xFF35B88F)
+    BallId.FIFTEEN -> Color(0xFFA33363)
 }
 
 @Composable
