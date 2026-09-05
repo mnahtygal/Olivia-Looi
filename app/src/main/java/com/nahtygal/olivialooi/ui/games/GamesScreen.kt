@@ -41,6 +41,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.nahtygal.olivialooi.ui.games.shapes.ShapesGameGlyph
 import com.nahtygal.olivialooi.R
 import com.nahtygal.olivialooi.ui.theme.DeepIndigo
 import com.nahtygal.olivialooi.ui.theme.FrostBlue
@@ -56,6 +57,7 @@ fun GamesScreen(
     onCountingClick: () -> Unit,
     onMathClick: () -> Unit,
     onAbcClick: () -> Unit,
+    onShapesClick: () -> Unit,
     onHomeClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -173,6 +175,17 @@ fun GamesScreen(
                                 modifier = Modifier.weight(1f),
                             ) { AbcGameGlyph(Modifier.fillMaxSize()) }
                         }
+                        Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+                            GameMenuCard(
+                                labelResource = R.string.shapes_name,
+                                subtitleResource = R.string.shapes_card_subtitle,
+                                accessibilityResource = R.string.open_shapes_description,
+                                onClick = onShapesClick,
+                                tabletLayout = true,
+                                modifier = Modifier.weight(1f),
+                            ) { ShapesGameGlyph(Modifier.fillMaxSize()) }
+                            Spacer(Modifier.weight(1f))
+                        }
                     }
                 } else {
                     Column(
@@ -245,6 +258,14 @@ fun GamesScreen(
                             tabletLayout = false,
                             modifier = Modifier.fillMaxWidth(),
                         ) { AbcGameGlyph(Modifier.fillMaxSize()) }
+                        GameMenuCard(
+                            labelResource = R.string.shapes_name,
+                            subtitleResource = R.string.shapes_card_subtitle,
+                            accessibilityResource = R.string.open_shapes_description,
+                            onClick = onShapesClick,
+                            tabletLayout = false,
+                            modifier = Modifier.fillMaxWidth(),
+                        ) { ShapesGameGlyph(Modifier.fillMaxSize()) }
                     }
                 }
 

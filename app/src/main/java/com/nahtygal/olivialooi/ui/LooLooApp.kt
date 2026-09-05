@@ -13,6 +13,9 @@ import com.nahtygal.olivialooi.apps.KidAppLaunchResult
 import com.nahtygal.olivialooi.apps.KidAppLauncher
 import com.nahtygal.olivialooi.games.coloring.ColoringPicture
 import com.nahtygal.olivialooi.games.counting.CountingLevel
+import com.nahtygal.olivialooi.games.shapes.ShapesMode
+import com.nahtygal.olivialooi.ui.games.shapes.ShapesActivityScreen
+import com.nahtygal.olivialooi.ui.games.shapes.ShapesAdventureScreen
 import com.nahtygal.olivialooi.games.abc.AbcMode
 import com.nahtygal.olivialooi.games.memory.MemoryGameSize
 import com.nahtygal.olivialooi.games.math.MathLevel
@@ -56,6 +59,8 @@ private enum class LooLooScreen {
     MathGame,
     AbcAdventure,
     AbcActivity,
+    ShapesAdventure,
+    ShapesActivity,
 }
 
 @Composable
@@ -82,6 +87,8 @@ fun LooLooApp() {
     var mathSessionId by rememberSaveable { mutableIntStateOf(0) }
     var abcModeName by rememberSaveable { mutableStateOf(AbcMode.LEARN.name) }
     var abcSessionId by rememberSaveable { mutableIntStateOf(0) }
+    var shapesModeName by rememberSaveable { mutableStateOf(ShapesMode.LEARN.name) }
+    var shapesSessionId by rememberSaveable { mutableIntStateOf(0) }
     val screen = enumValueOf<LooLooScreen>(screenName)
     val gameMode = enumValueOf<TicTacToeGameMode>(gameModeName)
     val memoryGameSize = enumValueOf<MemoryGameSize>(memoryGameSizeName)
@@ -111,6 +118,8 @@ fun LooLooApp() {
                 LooLooScreen.CountingLevel -> LooLooScreen.Games
                 LooLooScreen.MathGame -> LooLooScreen.MathLevel
                 LooLooScreen.MathLevel -> LooLooScreen.Games
+                LooLooScreen.ShapesActivity -> LooLooScreen.ShapesAdventure
+                LooLooScreen.ShapesAdventure -> LooLooScreen.Games
                 LooLooScreen.AbcActivity -> LooLooScreen.AbcAdventure
                 LooLooScreen.AbcAdventure -> LooLooScreen.Games
                 LooLooScreen.Games -> LooLooScreen.Home
@@ -141,6 +150,7 @@ fun LooLooApp() {
             onAnimalSoundsClick = { navigateTo(LooLooScreen.AnimalSounds) },
             onCountingClick = { navigateTo(LooLooScreen.CountingLevel) },
             onMathClick = { navigateTo(LooLooScreen.MathLevel) },
+            onShapesClick = { navigateTo(LooLooScreen.ShapesAdventure) },
             onAbcClick = { navigateTo(LooLooScreen.AbcAdventure) },
             onHomeClick = { navigateTo(LooLooScreen.Home) },
         )
@@ -232,6 +242,22 @@ fun LooLooApp() {
             level = mathLevel,
             sessionId = mathSessionId,
             onPickAnotherLevelClick = { navigateTo(LooLooScreen.MathLevel) },
+            onBackToGamesClick = { navigateTo(LooLooScreen.Games) },
+        )
+
+        LooLooScreen.ShapesAdventure -> ShapesAdventureScreen(
+            onModeSelected = { selectedMode ->
+                shapesModeName = selectedMode.name
+                shapesSessionId += 1
+                navigateTo(LooLooScreen.ShapesActivity)
+            },
+            onGamesClick = { navigateTo(LooLooScreen.Games) },
+        )
+
+        LooLooScreen.ShapesActivity -> ShapesActivityScreen(
+            mode = enumValueOf<ShapesMode>(shapesModeName),
+            sessionId = shapesSessionId,
+            onPickAnotherAdventureClick = { navigateTo(LooLooScreen.ShapesAdventure) },
             onBackToGamesClick = { navigateTo(LooLooScreen.Games) },
         )
 
