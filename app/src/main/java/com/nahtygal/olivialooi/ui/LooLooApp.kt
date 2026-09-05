@@ -2,6 +2,9 @@ package com.nahtygal.olivialooi.ui
 
 import com.nahtygal.olivialooi.ui.games.piano.PianoScreen
 import com.nahtygal.olivialooi.ui.games.drums.DrumScreen
+import com.nahtygal.olivialooi.games.billiards.BilliardsMode
+import com.nahtygal.olivialooi.ui.games.billiards.BilliardsModeScreen
+import com.nahtygal.olivialooi.ui.games.billiards.BilliardsTableScreen
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -73,6 +76,8 @@ private enum class LooLooScreen {
     PuzzleBoard,
     Piano,
     Drums,
+    BilliardsModes,
+    BilliardsTable,
 }
 
 @Composable
@@ -104,6 +109,8 @@ fun LooLooApp() {
     var puzzlePictureName by rememberSaveable { mutableStateOf(PuzzlePicture.BUTTERFLY.name) }
     var puzzleDifficultyName by rememberSaveable { mutableStateOf(PuzzleDifficulty.EASY.name) }
     var puzzleSessionId by rememberSaveable { mutableIntStateOf(0) }
+    var billiardsModeName by rememberSaveable { mutableStateOf(BilliardsMode.FREE_PLAY.name) }
+    var billiardsSessionId by rememberSaveable { mutableIntStateOf(0) }
     val screen = enumValueOf<LooLooScreen>(screenName)
     val gameMode = enumValueOf<TicTacToeGameMode>(gameModeName)
     val memoryGameSize = enumValueOf<MemoryGameSize>(memoryGameSizeName)
@@ -133,6 +140,8 @@ fun LooLooApp() {
                 LooLooScreen.CountingLevel -> LooLooScreen.Games
                 LooLooScreen.MathGame -> LooLooScreen.MathLevel
                 LooLooScreen.MathLevel -> LooLooScreen.Games
+                LooLooScreen.BilliardsTable -> LooLooScreen.BilliardsModes
+                LooLooScreen.BilliardsModes -> LooLooScreen.Games
                 LooLooScreen.Drums -> LooLooScreen.Games
                 LooLooScreen.Piano -> LooLooScreen.Games
                 LooLooScreen.PuzzleBoard -> LooLooScreen.PuzzleDifficulty
@@ -170,6 +179,7 @@ fun LooLooApp() {
             onAnimalSoundsClick = { navigateTo(LooLooScreen.AnimalSounds) },
             onCountingClick = { navigateTo(LooLooScreen.CountingLevel) },
             onMathClick = { navigateTo(LooLooScreen.MathLevel) },
+            onBilliardsClick = { navigateTo(LooLooScreen.BilliardsModes) },
             onDrumsClick = { navigateTo(LooLooScreen.Drums) },
             onPianoClick = { navigateTo(LooLooScreen.Piano) },
             onPuzzlesClick = { navigateTo(LooLooScreen.PuzzlePictures) },
@@ -266,6 +276,22 @@ fun LooLooApp() {
             sessionId = mathSessionId,
             onPickAnotherLevelClick = { navigateTo(LooLooScreen.MathLevel) },
             onBackToGamesClick = { navigateTo(LooLooScreen.Games) },
+        )
+
+        LooLooScreen.BilliardsModes -> BilliardsModeScreen(
+            onMode = {
+                billiardsModeName = it.name
+                billiardsSessionId += 1
+                navigateTo(LooLooScreen.BilliardsTable)
+            },
+            onGamesClick = { navigateTo(LooLooScreen.Games) },
+        )
+        LooLooScreen.BilliardsTable -> BilliardsTableScreen(
+            mode = enumValueOf<BilliardsMode>(billiardsModeName),
+            sessionId = billiardsSessionId,
+            onMode = { billiardsModeName = it.name; billiardsSessionId += 1 },
+            onModesClick = { navigateTo(LooLooScreen.BilliardsModes) },
+            onGamesClick = { navigateTo(LooLooScreen.Games) },
         )
 
         LooLooScreen.Drums -> DrumScreen(onGamesClick = { navigateTo(LooLooScreen.Games) })

@@ -41,6 +41,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.nahtygal.olivialooi.ui.games.billiards.BilliardsGameGlyph
 import com.nahtygal.olivialooi.ui.games.drums.DrumGameGlyph
 import com.nahtygal.olivialooi.ui.games.piano.PianoGameGlyph
 import com.nahtygal.olivialooi.ui.games.puzzles.PuzzleGameGlyph
@@ -64,6 +65,7 @@ fun GamesScreen(
     onPuzzlesClick: () -> Unit,
     onPianoClick: () -> Unit,
     onDrumsClick: () -> Unit,
+    onBilliardsClick: () -> Unit,
     onHomeClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -217,6 +219,17 @@ fun GamesScreen(
                                 modifier = Modifier.weight(1f),
                             ) { DrumGameGlyph(Modifier.fillMaxSize()) }
                         }
+                        Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+                            GameMenuCard(
+                                labelResource = R.string.billiards_name,
+                                subtitleResource = R.string.billiards_card_subtitle,
+                                accessibilityResource = R.string.billiards_open_description,
+                                onClick = onBilliardsClick,
+                                tabletLayout = true,
+                                modifier = Modifier.weight(1f),
+                            ) { BilliardsGameGlyph(Modifier.fillMaxSize()) }
+                            Spacer(Modifier.weight(1f))
+                        }
                     }
                 } else {
                     Column(
@@ -321,6 +334,14 @@ fun GamesScreen(
                             tabletLayout = false,
                             modifier = Modifier.fillMaxWidth(),
                         ) { DrumGameGlyph(Modifier.fillMaxSize()) }
+                        GameMenuCard(
+                            labelResource = R.string.billiards_name,
+                            subtitleResource = R.string.billiards_card_subtitle,
+                            accessibilityResource = R.string.billiards_open_description,
+                            onClick = onBilliardsClick,
+                            tabletLayout = false,
+                            modifier = Modifier.fillMaxWidth(),
+                        ) { BilliardsGameGlyph(Modifier.fillMaxSize()) }
                     }
                 }
 
