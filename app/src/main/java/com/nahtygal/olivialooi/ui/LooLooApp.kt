@@ -9,6 +9,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import com.nahtygal.olivialooi.games.puzzles.PuzzlePicture
+import com.nahtygal.olivialooi.games.puzzles.PuzzleDifficulty
+import com.nahtygal.olivialooi.ui.games.puzzles.PuzzlePictureScreen
+import com.nahtygal.olivialooi.ui.games.puzzles.PuzzleDifficultyScreen
+import com.nahtygal.olivialooi.ui.games.puzzles.PuzzleBoardScreen
 import com.nahtygal.olivialooi.apps.KidAppLaunchResult
 import com.nahtygal.olivialooi.apps.KidAppLauncher
 import com.nahtygal.olivialooi.games.coloring.ColoringPicture
@@ -61,6 +66,9 @@ private enum class LooLooScreen {
     AbcActivity,
     ShapesAdventure,
     ShapesActivity,
+    PuzzlePictures,
+    PuzzleDifficulty,
+    PuzzleBoard,
 }
 
 @Composable
@@ -89,6 +97,9 @@ fun LooLooApp() {
     var abcSessionId by rememberSaveable { mutableIntStateOf(0) }
     var shapesModeName by rememberSaveable { mutableStateOf(ShapesMode.LEARN.name) }
     var shapesSessionId by rememberSaveable { mutableIntStateOf(0) }
+    var puzzlePictureName by rememberSaveable { mutableStateOf(PuzzlePicture.BUTTERFLY.name) }
+    var puzzleDifficultyName by rememberSaveable { mutableStateOf(PuzzleDifficulty.EASY.name) }
+    var puzzleSessionId by rememberSaveable { mutableIntStateOf(0) }
     val screen = enumValueOf<LooLooScreen>(screenName)
     val gameMode = enumValueOf<TicTacToeGameMode>(gameModeName)
     val memoryGameSize = enumValueOf<MemoryGameSize>(memoryGameSizeName)
@@ -102,7 +113,7 @@ fun LooLooApp() {
         screenName = destination.name
     }
 
-    BackHandler(enabled = screen != LooLooScreen.Home) {
+    BackHandler(enabled = screen != LooLooScreen.Home && screen != LooLooScreen.PuzzleBoard) {
         navigateTo(
             when (screen) {
                 LooLooScreen.TicTacToeGame -> LooLooScreen.TicTacToeMode
@@ -118,6 +129,9 @@ fun LooLooApp() {
                 LooLooScreen.CountingLevel -> LooLooScreen.Games
                 LooLooScreen.MathGame -> LooLooScreen.MathLevel
                 LooLooScreen.MathLevel -> LooLooScreen.Games
+                LooLooScreen.PuzzleBoard -> LooLooScreen.PuzzleDifficulty
+                LooLooScreen.PuzzleDifficulty -> LooLooScreen.PuzzlePictures
+                LooLooScreen.PuzzlePictures -> LooLooScreen.Games
                 LooLooScreen.ShapesActivity -> LooLooScreen.ShapesAdventure
                 LooLooScreen.ShapesAdventure -> LooLooScreen.Games
                 LooLooScreen.AbcActivity -> LooLooScreen.AbcAdventure
@@ -150,6 +164,7 @@ fun LooLooApp() {
             onAnimalSoundsClick = { navigateTo(LooLooScreen.AnimalSounds) },
             onCountingClick = { navigateTo(LooLooScreen.CountingLevel) },
             onMathClick = { navigateTo(LooLooScreen.MathLevel) },
+            onPuzzlesClick = { navigateTo(LooLooScreen.PuzzlePictures) },
             onShapesClick = { navigateTo(LooLooScreen.ShapesAdventure) },
             onAbcClick = { navigateTo(LooLooScreen.AbcAdventure) },
             onHomeClick = { navigateTo(LooLooScreen.Home) },
@@ -243,6 +258,33 @@ fun LooLooApp() {
             sessionId = mathSessionId,
             onPickAnotherLevelClick = { navigateTo(LooLooScreen.MathLevel) },
             onBackToGamesClick = { navigateTo(LooLooScreen.Games) },
+        )
+
+        LooLooScreen.PuzzlePictures -> PuzzlePictureScreen(
+            onPictureSelected = { selected ->
+                puzzlePictureName = selected.name
+                navigateTo(LooLooScreen.PuzzleDifficulty)
+            },
+            onGamesClick = { navigateTo(LooLooScreen.Games) },
+        )
+
+        LooLooScreen.PuzzleDifficulty -> PuzzleDifficultyScreen(
+            picture = enumValueOf<PuzzlePicture>(puzzlePictureName),
+            onDifficultySelected = { selected ->
+                puzzleDifficultyName = selected.name
+                puzzleSessionId += 1
+                navigateTo(LooLooScreen.PuzzleBoard)
+            },
+            onPicturesClick = { navigateTo(LooLooScreen.PuzzlePictures) },
+        )
+
+        LooLooScreen.PuzzleBoard -> PuzzleBoardScreen(
+            picture = enumValueOf<PuzzlePicture>(puzzlePictureName),
+            difficulty = enumValueOf<PuzzleDifficulty>(puzzleDifficultyName),
+            sessionId = puzzleSessionId,
+            onChoosePieces = { navigateTo(LooLooScreen.PuzzleDifficulty) },
+            onPickAnotherPuzzle = { navigateTo(LooLooScreen.PuzzlePictures) },
+            onGamesClick = { navigateTo(LooLooScreen.Games) },
         )
 
         LooLooScreen.ShapesAdventure -> ShapesAdventureScreen(

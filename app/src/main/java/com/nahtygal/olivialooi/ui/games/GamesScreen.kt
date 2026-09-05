@@ -41,6 +41,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.nahtygal.olivialooi.ui.games.puzzles.PuzzleGameGlyph
 import com.nahtygal.olivialooi.ui.games.shapes.ShapesGameGlyph
 import com.nahtygal.olivialooi.R
 import com.nahtygal.olivialooi.ui.theme.DeepIndigo
@@ -58,6 +59,7 @@ fun GamesScreen(
     onMathClick: () -> Unit,
     onAbcClick: () -> Unit,
     onShapesClick: () -> Unit,
+    onPuzzlesClick: () -> Unit,
     onHomeClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -184,7 +186,14 @@ fun GamesScreen(
                                 tabletLayout = true,
                                 modifier = Modifier.weight(1f),
                             ) { ShapesGameGlyph(Modifier.fillMaxSize()) }
-                            Spacer(Modifier.weight(1f))
+                            GameMenuCard(
+                                labelResource = R.string.puzzle_name,
+                                subtitleResource = R.string.puzzle_card_subtitle,
+                                accessibilityResource = R.string.puzzle_open_description,
+                                onClick = onPuzzlesClick,
+                                tabletLayout = true,
+                                modifier = Modifier.weight(1f),
+                            ) { PuzzleGameGlyph(Modifier.fillMaxSize()) }
                         }
                     }
                 } else {
@@ -266,6 +275,14 @@ fun GamesScreen(
                             tabletLayout = false,
                             modifier = Modifier.fillMaxWidth(),
                         ) { ShapesGameGlyph(Modifier.fillMaxSize()) }
+                        GameMenuCard(
+                            labelResource = R.string.puzzle_name,
+                            subtitleResource = R.string.puzzle_card_subtitle,
+                            accessibilityResource = R.string.puzzle_open_description,
+                            onClick = onPuzzlesClick,
+                            tabletLayout = false,
+                            modifier = Modifier.fillMaxWidth(),
+                        ) { PuzzleGameGlyph(Modifier.fillMaxSize()) }
                     }
                 }
 

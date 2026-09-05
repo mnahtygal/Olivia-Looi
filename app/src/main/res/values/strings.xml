@@ -356,4 +356,46 @@
         <item quantity="one">⭐ You earned %1$d star!</item>
         <item quantity="other">⭐ You earned %1$d stars!</item>
     </plurals>
+    <string name="puzzle_name">Picture Puzzles</string>
+    <string name="puzzle_card_subtitle">Let’s put it together!</string>
+    <string name="puzzle_open_description">Play Picture Puzzles</string>
+    <string name="puzzle_pick_picture">Pick a Puzzle</string>
+    <string name="puzzle_choose_difficulty">Choose Your Puzzle</string>
+    <string name="puzzle_picture_description">%1$s puzzle</string>
+    <plurals name="puzzle_difficulty_description">
+        <item quantity="one">%1$d piece puzzle, %2$s</item>
+        <item quantity="other">%1$d piece puzzle, %2$s</item>
+    </plurals>
+    <plurals name="puzzle_piece_count">
+        <item quantity="one">%1$d Piece</item>
+        <item quantity="other">%1$d Pieces</item>
+    </plurals>
+    <plurals name="puzzle_progress">
+        <item quantity="one">%1$d of %2$d piece</item>
+        <item quantity="other">%1$d of %2$d pieces</item>
+    </plurals>
+    <plurals name="puzzle_progress_description">
+        <item quantity="one">%1$d of %2$d piece complete</item>
+        <item quantity="other">%1$d of %2$d pieces complete</item>
+    </plurals>
+    <string name="puzzle_instructions">Drag a piece to the board, or tap a piece and then a space.</string>
+    <string name="puzzle_retry">Try another spot. You can do it!</string>
+    <string name="puzzle_show_picture">👁 Show Picture</string>
+    <string name="puzzle_show_picture_description">Show completed picture</string>
+    <string name="puzzle_start_over">Start Over</string>
+    <string name="puzzle_start_over_description">Start puzzle over</string>
+    <string name="puzzle_back_pictures">Back to Puzzle Pictures</string>
+    <string name="puzzle_back_difficulty">Back to Choose Pieces</string>
+    <string name="puzzle_back_description">Back to puzzle choices</string>
+    <string name="puzzle_restart_question">Start this puzzle over?</string>
+    <string name="puzzle_leave_question">Leave your puzzle?</string>
+    <string name="puzzle_leave">Leave Puzzle</string>
+    <string name="puzzle_keep_puzzling">Keep Puzzling</string>
+    <string name="puzzle_complete">Great puzzle, Olivia!</string>
+    <string name="puzzle_again">Puzzle Again</string>
+    <string name="puzzle_pick_another">Pick Another Puzzle</string>
+    <string name="puzzle_piece_available">Puzzle piece %1$d, not placed</string>
+    <string name="puzzle_piece_selected">Puzzle piece %1$d, selected</string>
+    <string name="puzzle_cell_empty">Puzzle board position %1$d, empty</string>
+    <string name="puzzle_cell_filled">Puzzle board position %1$d, filled. Puzzle piece %2$d, placed</string>
 </resources>
