@@ -1,5 +1,6 @@
 package com.nahtygal.olivialooi.ui
 
+import com.nahtygal.olivialooi.ui.games.piano.PianoScreen
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -69,6 +70,7 @@ private enum class LooLooScreen {
     PuzzlePictures,
     PuzzleDifficulty,
     PuzzleBoard,
+    Piano,
 }
 
 @Composable
@@ -129,6 +131,7 @@ fun LooLooApp() {
                 LooLooScreen.CountingLevel -> LooLooScreen.Games
                 LooLooScreen.MathGame -> LooLooScreen.MathLevel
                 LooLooScreen.MathLevel -> LooLooScreen.Games
+                LooLooScreen.Piano -> LooLooScreen.Games
                 LooLooScreen.PuzzleBoard -> LooLooScreen.PuzzleDifficulty
                 LooLooScreen.PuzzleDifficulty -> LooLooScreen.PuzzlePictures
                 LooLooScreen.PuzzlePictures -> LooLooScreen.Games
@@ -164,6 +167,7 @@ fun LooLooApp() {
             onAnimalSoundsClick = { navigateTo(LooLooScreen.AnimalSounds) },
             onCountingClick = { navigateTo(LooLooScreen.CountingLevel) },
             onMathClick = { navigateTo(LooLooScreen.MathLevel) },
+            onPianoClick = { navigateTo(LooLooScreen.Piano) },
             onPuzzlesClick = { navigateTo(LooLooScreen.PuzzlePictures) },
             onShapesClick = { navigateTo(LooLooScreen.ShapesAdventure) },
             onAbcClick = { navigateTo(LooLooScreen.AbcAdventure) },
@@ -258,6 +262,10 @@ fun LooLooApp() {
             sessionId = mathSessionId,
             onPickAnotherLevelClick = { navigateTo(LooLooScreen.MathLevel) },
             onBackToGamesClick = { navigateTo(LooLooScreen.Games) },
+        )
+
+        LooLooScreen.Piano -> PianoScreen(
+            onGamesClick = { navigateTo(LooLooScreen.Games) },
         )
 
         LooLooScreen.PuzzlePictures -> PuzzlePictureScreen(

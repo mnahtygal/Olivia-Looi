@@ -398,4 +398,27 @@
     <string name="puzzle_piece_selected">Puzzle piece %1$d, selected</string>
     <string name="puzzle_cell_empty">Puzzle board position %1$d, empty</string>
     <string name="puzzle_cell_filled">Puzzle board position %1$d, filled. Puzzle piece %2$d, placed</string>
+    <string name="piano_name">LooLoo Piano</string>
+    <string name="piano_card_subtitle">Let’s make some music!</string>
+    <string name="piano_open_description">Play LooLoo Piano</string>
+    <string name="piano_free_play">Play Piano</string>
+    <string name="piano_play_song">Play a Song</string>
+    <string name="piano_choose_song">Pick a song to play!</string>
+    <string name="piano_start_song">Start Song</string>
+    <string name="piano_restart_song">Restart Song</string>
+    <string name="piano_exit_song">Exit Song</string>
+    <string name="piano_say_notes_off">🔊 Say Notes: Off</string>
+    <string name="piano_say_notes_on">🔊 Say Notes: On</string>
+    <string name="piano_opening">Let’s make some music!</string>
+    <string name="piano_completion_speech">Great playing, Olivia!</string>
+    <string name="piano_complete">♫ Great playing, Olivia! ♫</string>
+    <string name="piano_next_note">Next note is %1$s</string>
+    <string name="piano_key_pressed">Pressed</string>
+    <string name="piano_key_next">Next note</string>
+    <string name="piano_loading">Getting the piano ready…</string>
+    <string name="piano_audio_unavailable">Piano sound is unavailable. You can still follow the keys.</string>
+    <plurals name="piano_progress">
+        <item quantity="one">Song: %1$d note complete</item>
+        <item quantity="other">Song: %1$d notes complete</item>
+    </plurals>
 </resources>

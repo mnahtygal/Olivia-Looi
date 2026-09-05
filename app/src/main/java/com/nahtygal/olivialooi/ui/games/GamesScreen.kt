@@ -41,6 +41,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.nahtygal.olivialooi.ui.games.piano.PianoGameGlyph
 import com.nahtygal.olivialooi.ui.games.puzzles.PuzzleGameGlyph
 import com.nahtygal.olivialooi.ui.games.shapes.ShapesGameGlyph
 import com.nahtygal.olivialooi.R
@@ -60,6 +61,7 @@ fun GamesScreen(
     onAbcClick: () -> Unit,
     onShapesClick: () -> Unit,
     onPuzzlesClick: () -> Unit,
+    onPianoClick: () -> Unit,
     onHomeClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -195,6 +197,17 @@ fun GamesScreen(
                                 modifier = Modifier.weight(1f),
                             ) { PuzzleGameGlyph(Modifier.fillMaxSize()) }
                         }
+                        Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+                            GameMenuCard(
+                                labelResource = R.string.piano_name,
+                                subtitleResource = R.string.piano_card_subtitle,
+                                accessibilityResource = R.string.piano_open_description,
+                                onClick = onPianoClick,
+                                tabletLayout = true,
+                                modifier = Modifier.weight(1f),
+                            ) { PianoGameGlyph(Modifier.fillMaxSize()) }
+                            Spacer(Modifier.weight(1f))
+                        }
                     }
                 } else {
                     Column(
@@ -283,6 +296,14 @@ fun GamesScreen(
                             tabletLayout = false,
                             modifier = Modifier.fillMaxWidth(),
                         ) { PuzzleGameGlyph(Modifier.fillMaxSize()) }
+                        GameMenuCard(
+                            labelResource = R.string.piano_name,
+                            subtitleResource = R.string.piano_card_subtitle,
+                            accessibilityResource = R.string.piano_open_description,
+                            onClick = onPianoClick,
+                            tabletLayout = false,
+                            modifier = Modifier.fillMaxWidth(),
+                        ) { PianoGameGlyph(Modifier.fillMaxSize()) }
                     }
                 }
 
