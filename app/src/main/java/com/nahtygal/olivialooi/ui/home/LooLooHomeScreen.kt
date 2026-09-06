@@ -8,6 +8,11 @@ import android.net.Uri
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.offset
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.semantics.Role
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -108,6 +113,7 @@ private enum class HomeSpeechState {
 fun LooLooHomeScreen(
     onGamesClick: () -> Unit,
     onAppsClick: () -> Unit,
+    onActivityClick: (HomeActivity) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -304,6 +310,7 @@ fun LooLooHomeScreen(
         onSettingsClick = openSettings,
         onGamesClick = openGames,
         onAppsClick = openApps,
+        onActivityClick = { activity -> leaveHome { onActivityClick(activity) } },
         modifier = modifier,
     )
 }
@@ -318,8 +325,10 @@ private fun LooLooHomeContent(
     onSettingsClick: () -> Unit,
     onGamesClick: () -> Unit,
     onAppsClick: () -> Unit,
+    onActivityClick: (HomeActivity) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    var picker by rememberSaveable { mutableStateOf<HomeArtworkAction?>(null) }
     val childName = stringResource(R.string.child_name_olivia)
     val isListening = speechState == HomeSpeechState.Starting ||
         speechState == HomeSpeechState.Listening ||
@@ -401,7 +410,7 @@ private fun LooLooHomeContent(
         // Keep the portrait artwork readable; extra speech content scrolls instead
         // of squeezing the girls or the functional controls into the remaining space.
         val heroWidth = if (maxWidth >= 600.dp) {
-            minOf(maxWidth - 40.dp, (maxHeight - 300.dp).coerceAtLeast(480.dp) * LOOLOO_IMAGE_ASPECT_RATIO)
+            minOf(maxWidth - 40.dp, (maxHeight - 170.dp).coerceAtLeast(480.dp) * LOOLOO_IMAGE_ASPECT_RATIO)
         } else {
             maxWidth - 40.dp
         }
@@ -442,10 +451,19 @@ private fun LooLooHomeContent(
                     modifier = Modifier
                         .width(heroWidth)
                         .aspectRatio(LOOLOO_IMAGE_ASPECT_RATIO),
+                    talkLabel = stringResource(primaryActionLabel),
+                    talkEnabled = speechState != HomeSpeechState.Starting && speechState != HomeSpeechState.Processing && speechState != HomeSpeechState.Thinking,
+                    onAction = { action ->
+                        when (action) {
+                            HomeArtworkAction.TALK -> onPrimaryAction()
+                            HomeArtworkAction.GAMES -> onGamesClick()
+                            else -> picker = action
+                        }
+                    },
                 )
             }
 
-            Text(
+            if (speechState != HomeSpeechState.Ready) Text(
                 text = greeting,
                 modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
                 color = SnowWhite,
@@ -483,17 +501,7 @@ private fun LooLooHomeContent(
             }
             Spacer(modifier = Modifier.height(8.dp))
 
-            TalkToLooLooButton(
-                labelResource = primaryActionLabel,
-                enabled = speechState != HomeSpeechState.Starting &&
-                    speechState != HomeSpeechState.Processing &&
-                    speechState != HomeSpeechState.Thinking,
-                onClick = onPrimaryAction,
-                modifier = Modifier.fillMaxWidth(),
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-
-            LooLooStatus(
+            if (isListening || speechState == HomeSpeechState.Thinking) LooLooStatus(
                 isListening = isListening,
                 isThinking = speechState == HomeSpeechState.Thinking,
                 microphoneAmplitude = microphoneAmplitude,
@@ -514,30 +522,75 @@ private fun LooLooHomeContent(
             Row(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                GamesButton(onClick = onGamesClick)
-                Spacer(modifier = Modifier.width(6.dp))
                 AppsButton(onClick = onAppsClick)
                 Spacer(modifier = Modifier.width(6.dp))
                 SettingsButton(onClick = onSettingsClick)
             }
         }
     }
+    picker?.let { selected ->
+        AlertDialog(
+            onDismissRequest = { picker = null },
+            title = { Text(stringResource(when (selected) {
+                HomeArtworkAction.MUSIC -> R.string.home_music
+                HomeArtworkAction.LEARN -> R.string.home_learn
+                else -> R.string.home_stories
+            })) },
+            text = {
+                if (selected == HomeArtworkAction.STORIES) Text(stringResource(R.string.home_stories_soon))
+                else Column(Modifier.verticalScroll(rememberScrollState())) {
+                    val activities = if (selected == HomeArtworkAction.MUSIC) listOf(HomeActivity.PIANO, HomeActivity.DRUMS)
+                        else listOf(HomeActivity.ABC, HomeActivity.MATH, HomeActivity.COUNTING, HomeActivity.SHAPES, HomeActivity.ANIMALS, HomeActivity.SPELLING)
+                    activities.forEach { activity ->
+                        TextButton(onClick = { picker = null; onActivityClick(activity) }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
+                            Text(stringResource(when (activity) {
+                                HomeActivity.PIANO -> R.string.home_piano
+                                HomeActivity.DRUMS -> R.string.home_drums
+                                HomeActivity.ABC -> R.string.home_abc
+                                HomeActivity.MATH -> R.string.home_math
+                                HomeActivity.COUNTING -> R.string.home_counting
+                                HomeActivity.SHAPES -> R.string.home_shapes
+                                HomeActivity.ANIMALS -> R.string.home_animals
+                                HomeActivity.SPELLING -> R.string.home_spelling
+                            }))
+                        }
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { picker = null }) { Text(stringResource(R.string.home_close)) } },
+        )
+    }
+
 }
 
 @Composable
-private fun LooLooAvatar(modifier: Modifier = Modifier) {
+private fun LooLooAvatar(modifier: Modifier = Modifier, talkLabel: String, talkEnabled: Boolean, onAction: (HomeArtworkAction) -> Unit) {
     val shape = RoundedCornerShape(28.dp)
-    Image(
-        painter = painterResource(R.drawable.looloo_home_olivia_eliana),
-        contentDescription = stringResource(R.string.looloo_avatar_content_description),
-        modifier = modifier
-            .clip(shape)
-            .border(2.dp, SnowWhite.copy(alpha = 0.72f), shape),
-        contentScale = ContentScale.Fit,
-    )
+    BoxWithConstraints(modifier) {
+        val image = HomeArtwork.fit(maxWidth.value, maxHeight.value)
+        Image(
+            painter = painterResource(R.drawable.looloo_home_olivia_eliana),
+            contentDescription = stringResource(R.string.looloo_avatar_content_description),
+            modifier = Modifier.fillMaxSize().clip(shape).border(2.dp, SnowWhite.copy(alpha = .72f), shape),
+            contentScale = ContentScale.Fit,
+        )
+        HomeArtworkAction.entries.forEach { action ->
+            val region = HomeArtwork.region(action, image)
+            val label = when (action) {
+                HomeArtworkAction.TALK -> talkLabel
+                HomeArtworkAction.GAMES -> stringResource(R.string.games_action)
+                HomeArtworkAction.MUSIC -> stringResource(R.string.home_music)
+                HomeArtworkAction.STORIES -> stringResource(R.string.home_stories)
+                HomeArtworkAction.LEARN -> stringResource(R.string.home_learn)
+            }
+            Box(Modifier.offset(region.left.dp, region.top.dp).size(region.width.dp, region.height.dp)
+                .clickable(enabled = action != HomeArtworkAction.TALK || talkEnabled, role = Role.Button, onClick = { onAction(action) })
+                .semantics { contentDescription = label })
+        }
+    }
 }
 
-private const val LOOLOO_IMAGE_ASPECT_RATIO = 1145f / 1374f
+private const val LOOLOO_IMAGE_ASPECT_RATIO = HomeArtwork.ASPECT_RATIO
 
 @Composable
 private fun LooLooStatus(
@@ -639,75 +692,6 @@ private fun MicrophoneLevelMeter(amplitude: Float, modifier: Modifier = Modifier
 private const val METER_VISIBLE_THRESHOLD = 0.035f
 
 @Composable
-private fun TalkToLooLooButton(
-    labelResource: Int,
-    enabled: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Button(
-        onClick = onClick,
-        enabled = enabled,
-        modifier = modifier.heightIn(min = 66.dp),
-        shape = RoundedCornerShape(28.dp),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = SnowWhite,
-            contentColor = DeepIndigo,
-            disabledContainerColor = SnowWhite.copy(alpha = 0.72f),
-            disabledContentColor = DeepIndigo.copy(alpha = 0.62f),
-        ),
-        elevation = ButtonDefaults.buttonElevation(defaultElevation = 8.dp, pressedElevation = 3.dp),
-    ) {
-        MicrophoneIcon(modifier = Modifier.size(27.dp))
-        Spacer(modifier = Modifier.width(11.dp))
-        Text(
-            text = stringResource(labelResource),
-            fontSize = 21.sp,
-            fontWeight = FontWeight.ExtraBold,
-            lineHeight = 25.sp,
-            textAlign = TextAlign.Center,
-        )
-    }
-}
-
-@Composable
-private fun MicrophoneIcon(modifier: Modifier = Modifier) {
-    Canvas(modifier = modifier) {
-        val stroke = 2.6.dp.toPx()
-        drawRoundRect(
-            color = DeepIndigo,
-            topLeft = Offset(size.width * 0.34f, size.height * 0.05f),
-            size = Size(size.width * 0.32f, size.height * 0.55f),
-            cornerRadius = CornerRadius(size.width * 0.18f),
-            style = Stroke(width = stroke),
-        )
-        drawArc(
-            color = DeepIndigo,
-            startAngle = 0f,
-            sweepAngle = 180f,
-            useCenter = false,
-            topLeft = Offset(size.width * 0.19f, size.height * 0.25f),
-            size = Size(size.width * 0.62f, size.height * 0.48f),
-            style = Stroke(width = stroke, cap = StrokeCap.Round),
-        )
-        drawLine(
-            color = DeepIndigo,
-            start = Offset(size.width * 0.5f, size.height * 0.73f),
-            end = Offset(size.width * 0.5f, size.height * 0.91f),
-            strokeWidth = stroke,
-            cap = StrokeCap.Round,
-        )
-        drawLine(
-            color = DeepIndigo,
-            start = Offset(size.width * 0.32f, size.height * 0.91f),
-            end = Offset(size.width * 0.68f, size.height * 0.91f),
-            strokeWidth = stroke,
-            cap = StrokeCap.Round,
-        )
-    }
-}
-
-@Composable
 private fun SettingsButton(onClick: () -> Unit) {
     val description = stringResource(R.string.looloo_settings_content_description)
     IconButton(
@@ -741,28 +725,6 @@ private fun SettingsButton(onClick: () -> Unit) {
                 center = center,
             )
         }
-    }
-}
-
-@Composable
-private fun GamesButton(onClick: () -> Unit) {
-    Button(
-        onClick = onClick,
-        modifier = Modifier.heightIn(min = 52.dp),
-        shape = RoundedCornerShape(24.dp),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = SnowWhite.copy(alpha = 0.92f),
-            contentColor = DeepIndigo,
-        ),
-        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
-    ) {
-        TicTacToeMiniIcon(modifier = Modifier.size(25.dp))
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(
-            text = stringResource(R.string.games_action),
-            fontSize = 18.sp,
-            fontWeight = FontWeight.ExtraBold,
-        )
     }
 }
 
@@ -807,38 +769,6 @@ private fun AppsMiniIcon(modifier: Modifier = Modifier) {
                 cornerRadius = corner,
             )
         }
-    }
-}
-
-@Composable
-private fun TicTacToeMiniIcon(modifier: Modifier = Modifier) {
-    Canvas(modifier = modifier) {
-        val stroke = 2.dp.toPx()
-        for (third in 1..2) {
-            val offset = size.width * third / 3f
-            drawLine(DeepIndigo, Offset(offset, 0f), Offset(offset, size.height), stroke)
-            drawLine(DeepIndigo, Offset(0f, offset), Offset(size.width, offset), stroke)
-        }
-        drawLine(
-            DeepIndigo,
-            Offset(size.width * 0.08f, size.height * 0.08f),
-            Offset(size.width * 0.25f, size.height * 0.25f),
-            stroke,
-            cap = StrokeCap.Round,
-        )
-        drawLine(
-            DeepIndigo,
-            Offset(size.width * 0.25f, size.height * 0.08f),
-            Offset(size.width * 0.08f, size.height * 0.25f),
-            stroke,
-            cap = StrokeCap.Round,
-        )
-        drawCircle(
-            DeepIndigo,
-            radius = size.width * 0.09f,
-            center = Offset(size.width * 0.83f, size.height * 0.5f),
-            style = Stroke(stroke),
-        )
     }
 }
 
@@ -908,6 +838,7 @@ private fun LooLooReadyPreview() {
             onSettingsClick = {},
             onGamesClick = {},
             onAppsClick = {},
+            onActivityClick = {},
         )
     }
 }
@@ -931,6 +862,7 @@ private fun LooLooListeningPreview() {
             onSettingsClick = {},
             onGamesClick = {},
             onAppsClick = {},
+            onActivityClick = {},
         )
     }
 }

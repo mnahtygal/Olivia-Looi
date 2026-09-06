@@ -48,6 +48,7 @@ import com.nahtygal.olivialooi.ui.games.spelling.SpeakAndSpellGameScreen
 import com.nahtygal.olivialooi.ui.games.spelling.SpeakAndSpellLevelScreen
 import com.nahtygal.olivialooi.ui.games.tictactoe.TicTacToeGameScreen
 import com.nahtygal.olivialooi.ui.games.tictactoe.TicTacToeModeScreen
+import com.nahtygal.olivialooi.ui.home.HomeActivity
 import com.nahtygal.olivialooi.ui.home.LooLooHomeScreen
 
 private enum class LooLooScreen {
@@ -162,6 +163,18 @@ fun LooLooApp() {
         LooLooScreen.Home -> LooLooHomeScreen(
             onGamesClick = { navigateTo(LooLooScreen.Games) },
             onAppsClick = { navigateTo(LooLooScreen.Apps) },
+            onActivityClick = { activity ->
+                navigateTo(when (activity) {
+                    HomeActivity.PIANO -> LooLooScreen.Piano
+                    HomeActivity.DRUMS -> LooLooScreen.Drums
+                    HomeActivity.ABC -> LooLooScreen.AbcAdventure
+                    HomeActivity.MATH -> LooLooScreen.MathLevel
+                    HomeActivity.COUNTING -> LooLooScreen.CountingLevel
+                    HomeActivity.SHAPES -> LooLooScreen.ShapesAdventure
+                    HomeActivity.ANIMALS -> LooLooScreen.AnimalSounds
+                    HomeActivity.SPELLING -> LooLooScreen.SpeakAndSpellLevel
+                })
+            },
         )
 
         LooLooScreen.Apps -> AppsScreen(

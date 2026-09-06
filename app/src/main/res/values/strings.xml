@@ -2,7 +2,7 @@
     <string name="app_name">LooLoo</string>
     <string name="child_name_olivia">Olivia</string>
     <string name="looloo_name">LooLoo</string>
-    <string name="looloo_subtitle">Olivia’s AI Companion</string>
+    <string name="looloo_subtitle">Olivia &amp; Eliana’s AI Companion</string>
     <string name="looloo_greeting">Hi, %1$s!</string>
     <string name="looloo_listening_greeting">I\'m listening, %1$s!</string>
     <string name="looloo_ready">Ready</string>
@@ -465,4 +465,17 @@
     <string name="billiards_again">Play Again</string>
     <string name="billiards_more">Play Some More</string>
     <string name="billiards_next">Next Ball</string>
+    <string name="home_music">Music</string>
+    <string name="home_stories">Stories</string>
+    <string name="home_learn">Learn</string>
+    <string name="home_stories_soon">Story Time is coming soon!</string>
+    <string name="home_close">Close</string>
+    <string name="home_piano">LooLoo Piano</string>
+    <string name="home_drums">LooLoo Drums</string>
+    <string name="home_abc">ABC Adventures</string>
+    <string name="home_math">Math With LooLoo</string>
+    <string name="home_counting">Count With LooLoo</string>
+    <string name="home_shapes">Shapes &amp; Colors</string>
+    <string name="home_animals">Animal Sounds</string>
+    <string name="home_spelling">Speak &amp; Spell</string>
 </resources>
