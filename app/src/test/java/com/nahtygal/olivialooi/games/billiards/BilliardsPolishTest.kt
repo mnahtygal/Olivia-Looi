@@ -15,7 +15,7 @@ class BilliardsPolishTest {
     @Test fun `rack has five centered triangular rows and fifteen active objects`() {
         val balls = BilliardsPhysics.rack().balls
         val rows = balls.filter { it.id != BallId.CUE }.groupBy { it.position.y }.toSortedMap()
-        assertEquals(listOf(1, 2, 3, 4, 5), rows.values.map { it.size })
+        assertEquals(listOf(5, 4, 3, 2, 1), rows.values.map { it.size })
         rows.values.forEach { row -> assertEquals(300.0, row.map { it.position.x }.average(), 0.0) }
         assertEquals((1..15).toList(), objects.map { it.number })
         assertEquals(0, BallId.CUE.number)

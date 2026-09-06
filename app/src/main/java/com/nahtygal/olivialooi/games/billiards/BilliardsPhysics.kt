@@ -16,11 +16,19 @@ data class Vec2(val x: Double, val y: Double) {
     companion object { val ZERO = Vec2(0.0, 0.0) }
 }
 
+enum class BallStyle { CUE, SOLID, EIGHT, STRIPE }
+
 enum class BallId(val number: Int, val visualIdentity: String) {
     CUE(0, "white"), ONE(1, "yellow"), TWO(2, "blue"), THREE(3, "red"),
-    FOUR(4, "purple"), FIVE(5, "orange"), SIX(6, "green"), SEVEN(7, "pink"),
-    EIGHT(8, "charcoal"), NINE(9, "cyan"), TEN(10, "sky blue"), ELEVEN(11, "coral"),
-    TWELVE(12, "lavender"), THIRTEEN(13, "amber"), FOURTEEN(14, "mint"), FIFTEEN(15, "burgundy");
+    FOUR(4, "purple"), FIVE(5, "orange"), SIX(6, "green"), SEVEN(7, "burgundy"),
+    EIGHT(8, "black"), NINE(9, "yellow"), TEN(10, "blue"), ELEVEN(11, "red"),
+    TWELVE(12, "purple"), THIRTEEN(13, "orange"), FOURTEEN(14, "green"), FIFTEEN(15, "burgundy");
+    val style: BallStyle get() = when (number) {
+        0 -> BallStyle.CUE
+        in 1..7 -> BallStyle.SOLID
+        8 -> BallStyle.EIGHT
+        else -> BallStyle.STRIPE
+    }
     val description: String get() = if (this == CUE) "Cue ball" else "$number ball"
 }
 
@@ -63,15 +71,23 @@ object BilliardsPhysics {
     )
 
     fun rack(): TableState {
-        val positions = buildList {
-            add(Vec2(300.0, 780.0))
-            // Five centered rows, with 53-unit horizontal and 47-unit vertical spacing.
-            // Adjacent centers remain farther apart than the unchanged 48-unit diameter.
-            for (row in 0 until 5) for (column in 0..row) {
-                add(Vec2(300.0 + (column - row / 2.0) * 53.0, 230.0 + row * 47.0))
+        // Top (wide row) to bottom (apex facing the unchanged cue position).
+        val rows = listOf(
+            listOf(BallId.TWO, BallId.NINE, BallId.FOUR, BallId.TWELVE, BallId.SEVEN),
+            listOf(BallId.TEN, BallId.FIVE, BallId.THIRTEEN, BallId.SIX),
+            listOf(BallId.THREE, BallId.EIGHT, BallId.FOURTEEN),
+            listOf(BallId.ELEVEN, BallId.FIFTEEN),
+            listOf(BallId.ONE),
+        )
+        val positions = buildMap {
+            put(BallId.CUE, Vec2(300.0, 780.0))
+            rows.forEachIndexed { row, ids ->
+                ids.forEachIndexed { column, id ->
+                    put(id, Vec2(300.0 + (column - (ids.size - 1) / 2.0) * 53.0, 230.0 + row * 47.0))
+                }
             }
         }
-        return TableState(BallId.entries.map { Ball(it, positions[it.number]) })
+        return TableState(BallId.entries.map { Ball(it, positions.getValue(it)) })
     }
 
     /** Pull back opposite the intended direction. A tap/near-zero drag launches nothing. */

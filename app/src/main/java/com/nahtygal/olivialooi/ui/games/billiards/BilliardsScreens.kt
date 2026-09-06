@@ -1,5 +1,7 @@
 package com.nahtygal.olivialooi.ui.games.billiards
 
+import androidx.compose.ui.graphics.drawscope.clipRect
+
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -318,7 +320,15 @@ private fun PoolTable(state: BilliardsState, foreground: Boolean, epoch: Int, mo
                 state.table.balls.filterNot { it.pocketed }.forEach { ball ->
                     val p = Offset(ball.position.x.toFloat(), ball.position.y.toFloat())
                     drawCircle(Color.Black.copy(alpha = .25f), ball.radius.toFloat(), p + Offset(4f, 5f))
-                    drawCircle(ballColor(ball.id), ball.radius.toFloat(), p)
+                    if (ball.id.style == BallStyle.STRIPE) {
+                        drawCircle(Color.White, ball.radius.toFloat(), p)
+                        val halfBand = ball.radius.toFloat() * .55f
+                        clipRect(p.x - ball.radius.toFloat(), p.y - halfBand, p.x + ball.radius.toFloat(), p.y + halfBand) {
+                            drawCircle(ballColor(ball.id), ball.radius.toFloat(), p)
+                        }
+                    } else {
+                        drawCircle(ballColor(ball.id), ball.radius.toFloat(), p)
+                    }
                     drawCircle(Color(0xFF17283A), ball.radius.toFloat(), p, style = Stroke(2f))
                     if (ball.id != BallId.CUE) {
                         drawCircle(Color.White, ball.radius.toFloat() * .62f, p)
@@ -389,21 +399,14 @@ private fun PoolTable(state: BilliardsState, foreground: Boolean, epoch: Int, mo
 
 private fun ballColor(id: BallId): Color = when (id) {
     BallId.CUE -> Color.White
-    BallId.ONE -> Color(0xFFFFD640)
-    BallId.TWO -> Color(0xFF3D78EA)
-    BallId.THREE -> Color(0xFFED5260)
-    BallId.FOUR -> Color(0xFF9860D5)
-    BallId.FIVE -> Color(0xFFFF963C)
-    BallId.SIX -> Color(0xFF69C956)
-    BallId.SEVEN -> Color(0xFFF27DBB)
-    BallId.EIGHT -> Color(0xFF343341)
-    BallId.NINE -> Color(0xFF52D6E7)
-    BallId.TEN -> Color(0xFF79B9FF)
-    BallId.ELEVEN -> Color(0xFFFF8173)
-    BallId.TWELVE -> Color(0xFFC19BEF)
-    BallId.THIRTEEN -> Color(0xFFE9B13C)
-    BallId.FOURTEEN -> Color(0xFF35B88F)
-    BallId.FIFTEEN -> Color(0xFFA33363)
+    BallId.ONE, BallId.NINE -> Color(0xFFFFD640)
+    BallId.TWO, BallId.TEN -> Color(0xFF3D78EA)
+    BallId.THREE, BallId.ELEVEN -> Color(0xFFED5260)
+    BallId.FOUR, BallId.TWELVE -> Color(0xFF9860D5)
+    BallId.FIVE, BallId.THIRTEEN -> Color(0xFFFF963C)
+    BallId.SIX, BallId.FOURTEEN -> Color(0xFF69C956)
+    BallId.SEVEN, BallId.FIFTEEN -> Color(0xFFA33363)
+    BallId.EIGHT -> Color.Black
 }
 
 @Composable
