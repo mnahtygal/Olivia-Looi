@@ -16,13 +16,15 @@ internal object LooLooVoiceSelector {
     fun select(
         voices: Collection<LooLooVoiceCandidate>,
         preferredVoiceName: String? = null,
+        offlineOnly: Boolean = false,
     ): LooLooVoiceCandidate? {
+        val eligible = if (offlineOnly) voices.filterNot { it.requiresNetwork } else voices
         val configuredName = preferredVoiceName?.trim().orEmpty()
         if (configuredName.isNotEmpty()) {
-            voices.firstOrNull { it.name == configuredName }?.let { return it }
+            eligible.firstOrNull { it.name == configuredName }?.let { return it }
         }
 
-        return voices
+        return eligible
             .asSequence()
             .filter { it.locale.language.equals(Locale.ENGLISH.language, ignoreCase = true) }
             .sortedWith(

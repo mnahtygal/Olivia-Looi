@@ -15,6 +15,7 @@ import java.util.concurrent.atomic.AtomicLong
 internal class AndroidTextToSpeech(
     context: Context,
     private val preferredVoiceName: String? = null,
+    private val offlineOnly: Boolean = false,
 ) : AutoCloseable {
     private val applicationContext = context.applicationContext
     private val pendingSpeech = PendingSpeechQueue()
@@ -108,7 +109,10 @@ internal class AndroidTextToSpeech(
             return
         }
 
-        discoverAndSelectVoice(engine)
+        if (!discoverAndSelectVoice(engine)) {
+            failPendingSpeech()
+            return
+        }
         val listenerResult = safely { engine.setOnUtteranceProgressListener(completionListener()) }
         if (listenerResult != TextToSpeech.SUCCESS) {
             failPendingSpeech()
@@ -127,7 +131,7 @@ internal class AndroidTextToSpeech(
         pendingSpeech.markReady()?.let(::speakIfCurrent)
     }
 
-    private fun discoverAndSelectVoice(engine: TextToSpeech) {
+    private fun discoverAndSelectVoice(engine: TextToSpeech): Boolean {
         val engineName = safely { engine.defaultEngine }.orEmpty().ifBlank { "unknown" }
         Log.d(TAG, "LOOLOO_TTS_ENGINE package=$engineName")
 
@@ -142,10 +146,10 @@ internal class AndroidTextToSpeech(
                 features = voice.features.orEmpty(),
             ).also(::logAvailableVoice)
         }
-        val selected = LooLooVoiceSelector.select(candidates, preferredVoiceName)
+        val selected = LooLooVoiceSelector.select(candidates, preferredVoiceName, offlineOnly)
         if (selected == null) {
             Log.d(TAG, "LOOLOO_TTS_FALLBACK reason=no_english_voice")
-            return
+            return !offlineOnly
         }
 
         val selectedVoice = androidVoices.firstOrNull { it.name == selected.name }
@@ -161,6 +165,8 @@ internal class AndroidTextToSpeech(
         } else {
             Log.d(TAG, "LOOLOO_TTS_FALLBACK reason=set_voice_failed name=${selected.name}")
         }
+        // Strict local callers never fall back to an unspecified platform voice.
+        return !offlineOnly || selectionResult == TextToSpeech.SUCCESS
     }
 
     private fun logAvailableVoice(voice: LooLooVoiceCandidate) {

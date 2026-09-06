@@ -48,6 +48,7 @@ import com.nahtygal.olivialooi.ui.games.spelling.SpeakAndSpellGameScreen
 import com.nahtygal.olivialooi.ui.games.spelling.SpeakAndSpellLevelScreen
 import com.nahtygal.olivialooi.ui.games.tictactoe.TicTacToeGameScreen
 import com.nahtygal.olivialooi.ui.games.tictactoe.TicTacToeModeScreen
+import com.nahtygal.olivialooi.ui.stories.StoryTimeScreen
 import com.nahtygal.olivialooi.ui.home.HomeActivity
 import com.nahtygal.olivialooi.ui.home.LooLooHomeScreen
 
@@ -77,6 +78,7 @@ private enum class LooLooScreen {
     PuzzleBoard,
     Piano,
     Drums,
+    StoryTime,
     BilliardsModes,
     BilliardsTable,
 }
@@ -153,6 +155,7 @@ fun LooLooApp() {
                 LooLooScreen.AbcActivity -> LooLooScreen.AbcAdventure
                 LooLooScreen.AbcAdventure -> LooLooScreen.Games
                 LooLooScreen.Games -> LooLooScreen.Home
+                LooLooScreen.StoryTime -> LooLooScreen.Home
                 LooLooScreen.Apps -> LooLooScreen.Home
                 LooLooScreen.Home -> LooLooScreen.Home
             },
@@ -163,6 +166,7 @@ fun LooLooApp() {
         LooLooScreen.Home -> LooLooHomeScreen(
             onGamesClick = { navigateTo(LooLooScreen.Games) },
             onAppsClick = { navigateTo(LooLooScreen.Apps) },
+            onStoriesClick = { navigateTo(LooLooScreen.StoryTime) },
             onActivityClick = { activity ->
                 navigateTo(when (activity) {
                     HomeActivity.PIANO -> LooLooScreen.Piano
@@ -176,6 +180,8 @@ fun LooLooApp() {
                 })
             },
         )
+
+        LooLooScreen.StoryTime -> StoryTimeScreen(onHome = { navigateTo(LooLooScreen.Home) })
 
         LooLooScreen.Apps -> AppsScreen(
             onLaunchApp = { app ->

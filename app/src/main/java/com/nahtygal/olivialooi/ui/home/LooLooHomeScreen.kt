@@ -113,6 +113,7 @@ private enum class HomeSpeechState {
 fun LooLooHomeScreen(
     onGamesClick: () -> Unit,
     onAppsClick: () -> Unit,
+    onStoriesClick: () -> Unit,
     onActivityClick: (HomeActivity) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -310,6 +311,7 @@ fun LooLooHomeScreen(
         onSettingsClick = openSettings,
         onGamesClick = openGames,
         onAppsClick = openApps,
+        onStoriesClick = { leaveHome(onStoriesClick) },
         onActivityClick = { activity -> leaveHome { onActivityClick(activity) } },
         modifier = modifier,
     )
@@ -325,6 +327,7 @@ private fun LooLooHomeContent(
     onSettingsClick: () -> Unit,
     onGamesClick: () -> Unit,
     onAppsClick: () -> Unit,
+    onStoriesClick: () -> Unit,
     onActivityClick: (HomeActivity) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -457,6 +460,7 @@ private fun LooLooHomeContent(
                         when (action) {
                             HomeArtworkAction.TALK -> onPrimaryAction()
                             HomeArtworkAction.GAMES -> onGamesClick()
+                            HomeArtworkAction.STORIES -> onStoriesClick()
                             else -> picker = action
                         }
                     },
@@ -537,8 +541,7 @@ private fun LooLooHomeContent(
                 else -> R.string.home_stories
             })) },
             text = {
-                if (selected == HomeArtworkAction.STORIES) Text(stringResource(R.string.home_stories_soon))
-                else Column(Modifier.verticalScroll(rememberScrollState())) {
+                Column(Modifier.verticalScroll(rememberScrollState())) {
                     val activities = if (selected == HomeArtworkAction.MUSIC) listOf(HomeActivity.PIANO, HomeActivity.DRUMS)
                         else listOf(HomeActivity.ABC, HomeActivity.MATH, HomeActivity.COUNTING, HomeActivity.SHAPES, HomeActivity.ANIMALS, HomeActivity.SPELLING)
                     activities.forEach { activity ->
@@ -838,6 +841,7 @@ private fun LooLooReadyPreview() {
             onSettingsClick = {},
             onGamesClick = {},
             onAppsClick = {},
+            onStoriesClick = {},
             onActivityClick = {},
         )
     }
@@ -862,6 +866,7 @@ private fun LooLooListeningPreview() {
             onSettingsClick = {},
             onGamesClick = {},
             onAppsClick = {},
+            onStoriesClick = {},
             onActivityClick = {},
         )
     }
