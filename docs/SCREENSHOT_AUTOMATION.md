@@ -46,6 +46,12 @@ The canonical inventory is `app/src/androidTest/assets/looloo_screenshots.json`:
 
 `CaptureActivity` exists only in `src/debug`, is not exported, and hosts the normal theme and real production screen composables supplied by instrumentation. It has no release counterpart. `CaptureFixtures` lives entirely in `androidTest`. It builds deterministic states with `Random(26)` and existing pure engines. Completion states use the engines' normal transitions. Puzzle progress uses valid placed-piece/tray state; all restoration payloads use existing production codecs/Savers. The first saveable slots of each screen are an explicit test contract, and both saver round trips and consumed/restored slots are checked. A changed contract fails capture rather than silently producing a different state. Private screen Savers are accessed reflectively only in the unminified test target; production code is not changed to expose screenshot hooks.
 
+Primitive saveable slots restore the exact production state interface: Animal Sounds feedback uses `FixtureInt` → `mutableIntStateOf`, and Billiards spoken-turn identity uses `FixtureLong` → `mutableLongStateOf`. Wrapping these values with generic `mutableStateOf` causes a runtime cast failure. Animal Sounds selects `cow` deterministically with feedback version zero and its sound word visible, without triggering selection audio.
+
+Each screen runs in a fresh instrumentation process with the required `screen_id` argument. The host exports its PNG and atomically replaces each manifest after every attempt, then proceeds to the next entry even after an isolated crash. Instrumentation is bounded to 120 seconds per fixture; ordinary ADB calls to 10 seconds. Missing/malformed results, fatal crashes, timeouts, and invalid PNG output fail that entry without substituting content. Local per-screen logs hold diagnostics; manifest failures include the screen ID, error type, and log path.
+
+After each attempt and on setup failure or interruption (Ctrl-C/SIGTERM), cleanup makes a best effort to force-stop the app and test package and press Android Home. Cleanup failures are recorded per entry and do not erase successful captures. A disconnected device or an uncatchable host termination such as SIGKILL can prevent cleanup; no device reboot is performed. Entries not reached after interruption remain blocked. Earlier successful PNGs remain available.
+
 These are staged showcase states rendered by the actual app UI, not evidence that an end-to-end user solved a game. Home pickers are opened with real semantic clicks. Individual game screens are staged directly to avoid slow or flaky multi-game play-throughs. Navigation callbacks on isolated fixture screens are inert; their rendered UI is the production screen. The root Home/Games fixtures use normal app navigation. `home_story_entry` is the Story Library reached from the Stories action and is intentionally visually equivalent to `story_library`.
 
 The Compose test clock freezes delayed transitions. Layout/semantics waits and measure/draw synchronization replace arbitrary sleeps. The drum demo advances virtual time into its first hit; LooLoo's turn is held before its launch timer. Billiards aiming uses the actual cue ball's semantic bounds and a held slingshot gesture. Read to Me resumes page one using the production Resume action. Story content and billiards physics are untouched. Audio initialization is awaited; device-specific voice/audio failures may prevent a requested transient state and are reported as failures.
@@ -62,12 +68,12 @@ build/looloo-screenshots/
   manifest.json
   showcase_order.txt
   showcase_manifest.json
-  instrumentation.log
+  logs/<screen_id>.log
 ```
 
 `build/` is already ignored by Git. Do not add generated PNGs unless explicitly requested. A custom output outside `build/` is the caller's responsibility.
 
-Manifest schema version 1 has an `entries` array. Each selected inventory entry includes `filename` (profile-relative), `screen_id`, `id`, `title`, `category`, `status`, device serial/model, orientation, app version/label when available, timestamp, duration, and notes. Status is `captured`, `skipped`, `failed`, or `blocked` (ADB/device preflight failed). **Only `captured` entries have newly exported PNGs.** Partial results survive failures. The script exits nonzero for failed captures or tooling errors. The manifest describes the latest invocation/category; use separate `--output` directories to retain manifests from different devices/runs.
+Manifest schema version 1 has an `entries` array. Each selected inventory entry includes `filename` (profile-relative), `screen_id`, `id`, `title`, `category`, `status`, device serial/model, orientation, app version/label when available, timestamp, duration, and notes. Status is `captured`, `skipped`, `failed`, or `blocked` (not attempted, interrupted before this entry, or setup/preflight failed). **Only `captured` entries have newly exported PNGs.** Partial results survive failures. The script exits nonzero for failed captures or tooling errors. The manifest describes the latest invocation/category; use separate `--output` directories to retain manifests from different devices/runs.
 
 Showcase order contains only successfully captured paths in inventory order. Showcase JSON adds title, duration, and a gentle-fade suggestion. This is ready as input to a future local stitching workflow, but no ffmpeg dependency, video generation, README edit, upload, or publication occurs here.
 
@@ -90,12 +96,12 @@ git diff --check
 - Multiple devices: pass `--serial`; the driver never guesses ownership.
 - Unauthorized/offline: unlock, authorize USB debugging, and reconnect.
 - Missing runner: use `--install` to install both APKs.
-- Saved-state contract or semantic failure: inspect local `instrumentation.log`, update only the test fixture contract, and recapture. Do not substitute a different screen or fabricate a PNG.
+- Saved-state contract or semantic failure: inspect local `logs/<screen_id>.log`, update only the test fixture contract, and recapture. Do not substitute a different screen or fabricate a PNG.
 - Audio loading never finishes: verify the local audio/TTS setup on that device. The timeout fails instead of taking a loading screen as a successful music state.
 - Rotated output: verify the device permits portrait; landscape PNGs are rejected.
 - Some captures missing: consult each manifest status; successful captures remain usable.
 - Raw instrumentation logs can contain local diagnostic paths; keep logs and device metadata private.
-- The local fixture checker constructs all 65 entries on the host JVM and checks production saver/codec round trips. It compiles instrumentation first and uses Java source-file launching with the existing JDK. Its ignored `fixture-classpath.txt` contains local build paths; do not publish it. This test does not render screens or simulate a device.
+- The local fixture checker constructs all 65 entries on the host JVM and checks production saver/codec round trips, deterministic Animal Sounds main/selected construction, and the actual restored primitive state interfaces for Animal Sounds and Billiards. It compiles instrumentation first and uses Java source-file launching with the existing JDK. Its ignored `fixture-classpath.txt` contains local build paths; do not publish it. This test does not render screens or simulate a device.
 - The capture activity's portrait-only lint exceptions are scoped to the debug manifest, not production. Android versions that ignore orientation locks are handled by rejecting landscape images.
 - The active window must belong to the app (or Settings for its opt-in entry); permission dialogs, a locked device, or other foreground apps fail capture instead of being mislabeled.
 

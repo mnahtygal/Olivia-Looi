@@ -75,11 +75,24 @@ class ShowcaseCaptureTest {
             CaptureFixtures.create(id)
         }
         assertEquals(65,ids.size)
+        assertNull(CaptureFixtures.create("animal_sounds_main").registry.consumeRestored("unused"))
+        repeat(2) {
+            val registry = CaptureFixtures.create("animal_sounds_selected").registry
+            assertEquals("cow", (registry.consumeRestored("animal") as State<*>).value)
+            val version = registry.consumeRestored("feedback")
+            assertTrue(version is MutableIntState)
+            assertEquals(0, (version as MutableIntState).intValue)
+            assertEquals(true, (registry.consumeRestored("showWord") as State<*>).value)
+        }
+        val billiards = CaptureFixtures.create("billiards_free_play_rack").registry
+        billiards.consumeRestored("table")
+        assertTrue(billiards.consumeRestored("spokenIdentity") is MutableLongState)
     }
 
     @Test fun captureInventory() {
         val args=InstrumentationRegistry.getArguments()
-        val category=args.getString("category","all")
+        // The host owns batching: an uncaught Compose exception can kill this process.
+        val screenId=requireNotNull(args.getString("screen_id")) { "Use the host capture script; one screen_id per instrumentation process is required" }
         val utilities=args.getString("utilities","false")=="true"
         val inventory=JSONArray(instrumentation.context.assets.open("looloo_screenshots.json").bufferedReader().use { it.readText() })
         assertEquals(65,inventory.length())
@@ -96,10 +109,11 @@ class ShowcaseCaptureTest {
             } }
         }
         val info=instrumentation.targetContext.packageManager.getPackageInfo(instrumentation.targetContext.packageName,0)
+        require((0 until inventory.length()).any { inventory.getJSONObject(it).getString("id") == screenId })
         var failures=0
         for(index in 0 until inventory.length()) {
             val entry=inventory.getJSONObject(index)
-            if(category!="all" && category!=entry.getString("category")) continue
+            if(screenId!=entry.getString("id")) continue
             val id=entry.getString("id")
             val record=JSONObject().put("app_version",info.versionName).put("app_label",instrumentation.targetContext.applicationInfo.loadLabel(instrumentation.targetContext.packageManager).toString()).put("timestamp",Instant.now().toString())
             try {
@@ -144,15 +158,20 @@ class ShowcaseCaptureTest {
             } catch(error: Throwable) {
                 failures++
                 // Avoid exporting raw stack traces/private paths into the shareable manifest.
-                record.put("status","failed").put("notes","Capture failed: ${error.javaClass.simpleName}; inspect local instrumentation log")
+                File(output,entry.getString("filename")).delete()
+                record.put("status","failed").put("error_type",error.javaClass.simpleName)
+                    .put("notes","$id failed: ${error.javaClass.simpleName}; see the per-fixture instrumentation log for details")
                 error.printStackTrace()
             } finally {
                 results.put(id,record)
                 File(output,"results.json").writeText(results.toString(2))
             }
         }
-        instrumentation.runOnMainSync { current=null }
-        compose.mainClock.advanceTimeByFrame()
+        try {
+            instrumentation.runOnMainSync { current=null; compose.activity.finish() }
+        } catch (_: Exception) {
+            // Host-side force-stop is the fallback when the Compose owner is already broken.
+        }
         assertEquals("Some requested screenshots failed; inspect manifest",0,failures)
     }
 }

@@ -36,6 +36,10 @@ import kotlin.random.Random
  * Existing private Savers are invoked only to serialize valid pure-engine fixture states.
  * The ordered restore slots are an explicit contract; the capture test checks consumption.
  */
+// Primitive snapshot slots must retain their specialized production interfaces.
+data class FixtureInt(val value: Int)
+data class FixtureLong(val value: Long)
+
 class FixtureRegistry(private val values: List<Any?>) : SaveableStateRegistry {
     private val delegate = SaveableStateRegistry(null) { true }
     private val restored = linkedMapOf<String, Any?>()
@@ -44,8 +48,11 @@ class FixtureRegistry(private val values: List<Any?>) : SaveableStateRegistry {
     override fun consumeRestored(key: String): Any? {
         if (consumed >= values.size) return null
         val value = values[consumed++]
-        restored[key] = value
-        return mutableStateOf(value)
+        return when (value) {
+            is FixtureInt -> { restored[key] = value.value; mutableIntStateOf(value.value) }
+            is FixtureLong -> { restored[key] = value.value; mutableLongStateOf(value.value) }
+            else -> { restored[key] = value; mutableStateOf(value) }
+        }
     }
     override fun registerProvider(key: String, valueProvider: () -> Any?): SaveableStateRegistry.Entry = delegate.registerProvider(key, valueProvider)
     override fun canBeSaved(value: Any) = true
@@ -101,7 +108,7 @@ object CaptureFixtures {
                 }
             }
             id.startsWith("animal_sounds_") -> {
-                if(id.endsWith("selected")) values = listOf("cow",0,true)
+                if(id.endsWith("selected")) values = listOf("cow",FixtureInt(0),true)
                 content = { AnimalSoundsScreen({}) }
             }
             id.startsWith("count_") -> {
@@ -192,7 +199,7 @@ object CaptureFixtures {
                     val mode=when { "versus" in id -> BilliardsMode.VERSUS; "try_pocket" in id -> BilliardsMode.TRY_POCKET; else -> BilliardsMode.FREE_PLAY }
                     var s=BilliardsEngine.newGame(mode,seed)
                     if(id.endsWith("looloo_turn")) s=BilliardsEngine.prepareAi(s.copy(turn=TurnOwner.LOOLOO),s.turnIdentity,seed)
-                    values=listOf(BilliardsStateCodec.encode(s).also { check(BilliardsStateCodec.decode(it) != null) },s.turnIdentity)
+                    values=listOf(BilliardsStateCodec.encode(s).also { check(BilliardsStateCodec.decode(it) != null) },FixtureLong(s.turnIdentity))
                     content={ BilliardsTableScreen(mode,26,{}, {}, {}) }
                 }
             }

@@ -4,8 +4,10 @@ import argparse
 import datetime as dt
 import json
 import os
+import re
 from pathlib import Path
 import shutil
+import signal
 import subprocess
 import sys
 
@@ -106,13 +108,116 @@ def manifest_entries(rows, device_results, metadata, profile):
     return result
 
 
+def atomic_text(path, text):
+    temporary = path.with_name(path.name + '.tmp')
+    temporary.write_text(text)
+    temporary.replace(path)
+
+
 def write_manifests(output, entries):
-    (output / 'manifest.json').write_text(json.dumps({'schema_version': 1, 'entries': entries}, indent=2) + '\n')
+    atomic_text(output / 'manifest.json', json.dumps({'schema_version': 1, 'entries': entries}, indent=2) + '\n')
     captured = [r for r in entries if r['status'] == 'captured']
-    (output / 'showcase_order.txt').write_text(''.join(r['filename'] + '\n' for r in captured))
-    (output / 'showcase_manifest.json').write_text(json.dumps([
+    atomic_text(output / 'showcase_order.txt', ''.join(r['filename'] + '\n' for r in captured))
+    atomic_text(output / 'showcase_manifest.json', json.dumps([
         {k: r[k] for k in ('filename', 'title', 'duration_seconds')} | {'transition': 'gentle fade'} for r in captured
     ], indent=2) + '\n')
+
+
+def cleanup_device(command):
+    """Best effort, bounded ADB calls; do not reboot or touch unrelated app processes."""
+    errors = []
+    for parts in (('shell', 'am', 'force-stop', PACKAGE),
+                  ('shell', 'am', 'force-stop', PACKAGE + '.test'),
+                  ('shell', 'input', 'keyevent', 'KEYCODE_HOME')):
+        try:
+            command(*parts)
+        except (OSError, subprocess.SubprocessError) as error:
+            errors.append(type(error).__name__)
+    return errors
+
+
+def capture_batch(rows, metadata, profile, output, command, instrument, utilities=False):
+    """A fresh Android instrumentation process per fixture contains fatal UI-thread crashes."""
+    results = {r['id']: {'status': 'blocked', 'notes': 'Not attempted'} for r in rows}
+    (output / 'logs').mkdir(parents=True, exist_ok=True)
+    def flush():
+        entries = manifest_entries(rows, results, metadata, profile)
+        write_manifests(output, entries)
+        return entries
+    flush()
+    for row in rows:
+        (output / profile / row['filename']).unlink(missing_ok=True)
+    for row in rows:
+        screen_id = row['id']
+        destination = output / profile / row['filename']
+        temporary = destination.with_name(destination.name + '.tmp')
+        record = {'status': 'failed', 'notes': f'{screen_id}: capture did not finish',
+                  'log_file': f'logs/{screen_id}.log'}
+        try:
+            destination.unlink(missing_ok=True)
+            temporary.unlink(missing_ok=True)
+            if not row['public_default'] and not utilities:
+                record = {'status': 'skipped', 'notes': 'Utility screen excluded by default; opt in after privacy review'}
+                continue
+            # Clear only this fixture's device outputs. Earlier PNGs remain intact.
+            command('shell', 'run-as', PACKAGE, 'rm', '-f', 'files/looloo-capture/results.json',
+                    'files/looloo-capture/' + row['filename'])
+            process = instrument(screen_id)
+            log = (process.stdout or '') + (process.stderr or '')
+            atomic_text(output / 'logs' / (screen_id + '.log'), log)
+            crashed = process.returncode != 0 or any(marker in log for marker in (
+                'FAILURES!!!', 'INSTRUMENTATION_FAILED', 'Process crashed', 'shortMsg=Process'))
+            try:
+                device = json.loads(command('exec-out', 'run-as', PACKAGE, 'cat', 'files/looloo-capture/results.json'))
+            except (subprocess.SubprocessError, json.JSONDecodeError):
+                device = {}
+            if not isinstance(device, dict) or set(device) - {screen_id}:
+                raise ValueError('Unexpected fixture result IDs')
+            reported = device.get(screen_id)
+            if reported is not None:
+                if not isinstance(reported, dict) or reported.get('status') not in ('captured', 'failed', 'skipped'):
+                    raise ValueError('Malformed fixture status')
+                record.update(reported)
+            if crashed or reported is None:
+                match = re.search(r'\b([A-Za-z][A-Za-z0-9]{0,90}(?:Exception|Error))\b', log)
+                kind = match.group(1) if match else ('InstrumentationCrash' if crashed else 'MissingFixtureResult')
+                record.update(status='failed', error_type=kind,
+                              notes=f'{screen_id}: {kind}; inspect logs/{screen_id}.log')
+            if record['status'] == 'captured':
+                data = command('exec-out', 'run-as', PACKAGE, 'cat',
+                               'files/looloo-capture/' + row['filename'], binary=True)
+                if not data.startswith(b'\x89PNG\r\n\x1a\n'):
+                    raise ValueError('Device output was not a PNG')
+                temporary.write_bytes(data)
+                temporary.replace(destination)
+        except KeyboardInterrupt:
+            atomic_text(output / 'logs' / (screen_id + '.log'), 'Capture interrupted; device cleanup attempted.\n')
+            record.update(status='failed', error_type='Interrupted', notes=f'{screen_id}: capture interrupted; later fixtures were not attempted')
+            raise
+        except (OSError, subprocess.SubprocessError, ValueError) as error:
+            # Full details remain local; no raw paths, keys, or infrastructure enter the manifest.
+            kind = type(error).__name__
+            record.update(status='failed', error_type=kind, notes=f'{screen_id}: {kind}; inspect logs/{screen_id}.log')
+            detail = str(error)
+            if isinstance(error, subprocess.TimeoutExpired):
+                detail = 'Instrumentation/ADB timed out. Device cleanup attempted.\n' + str(error.stdout or '') + str(error.stderr or '')
+            atomic_text(output / 'logs' / (screen_id + '.log'), detail)
+        finally:
+            try:
+                if record['status'] != 'captured':
+                    destination.unlink(missing_ok=True)
+                temporary.unlink(missing_ok=True)
+                # Persist before cleanup too, in case a disconnected device stalls cleanup.
+                results[screen_id] = record
+                flush()
+            finally:
+                # Cleanup must still run if a host filesystem operation fails.
+                errors = cleanup_device(command)
+                record['cleanup'] = 'best_effort_failed' if errors else 'completed'
+                if errors:
+                    record['cleanup_errors'] = errors
+            flush()
+    return flush()
 
 
 def main(argv=None):
@@ -136,58 +241,50 @@ def main(argv=None):
         }, args.profile))
         raise
     def command(*parts, binary=False):
-        return run([adb, '-s', serial, *parts], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=not binary).stdout
+        return run([adb, '-s', serial, *parts], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=not binary, timeout=30 if parts[0] == 'install' else 10).stdout
     pending = {r['id']: {'status': 'blocked', 'notes': 'Capture not started or setup failed'} for r in rows}
     write_manifests(output, manifest_entries(rows, pending, {
         'device_serial': serial, 'device_model': None, 'app_version': None, 'app_label': 'LooLoo',
         'orientation': 'portrait', 'profile': args.profile, 'timestamp': dt.datetime.now(dt.timezone.utc).isoformat(),
     }, args.profile))
-    if args.clean:
-        for row in inventory():
-            (output / args.profile / row['filename']).unlink(missing_ok=True)
-    if args.install:
-        run([str(ROOT / 'gradlew'), 'assembleDebug', 'assembleDebugAndroidTest'], cwd=ROOT)
-        for path in ('app/build/outputs/apk/debug/app-debug.apk', 'app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk'):
-            command('install', '-r', str(ROOT / path))
-    runners = command('shell', 'pm', 'list', 'instrumentation')
-    runner = PACKAGE + '.test/androidx.test.runner.AndroidJUnitRunner'
-    if runner not in runners:
-        raise ValueError('Capture instrumentation is not installed; rerun with --install')
-    metadata = {'device_serial': serial, 'device_model': command('shell', 'getprop', 'ro.product.model').strip(),
-                'orientation': 'portrait', 'timestamp': dt.datetime.now(dt.timezone.utc).isoformat(), 'profile': args.profile}
-    # Ensure a failed new run cannot accidentally reuse old device or host images.
-    command('shell', 'run-as', PACKAGE, 'rm', '-rf', 'files/looloo-capture')
-    for row in rows:
-        (output / args.profile / row['filename']).unlink(missing_ok=True)
-    instrumentation = subprocess.run([adb, '-s', serial, 'shell', 'am', 'instrument', '-w', '-r',
-        '-e', 'class', PACKAGE + '.screenshots.ShowcaseCaptureTest', '-e', 'category', args.category,
-        '-e', 'utilities', str(args.include_utilities).lower(), runner], capture_output=True, text=True)
-    # Raw instrumentation can contain device paths; keep it local, never in PNGs.
-    (output / 'instrumentation.log').write_text(instrumentation.stdout + instrumentation.stderr)
     try:
-        results = json.loads(command('exec-out', 'run-as', PACKAGE, 'cat', 'files/looloo-capture/results.json'))
-    except (subprocess.CalledProcessError, json.JSONDecodeError):
-        results = {}
-    entries = manifest_entries(rows, results, metadata, args.profile)
-    for entry, row in zip(entries, rows):
-        if entry['status'] != 'captured':
-            continue
-        try:
-            data = command('exec-out', 'run-as', PACKAGE, 'cat', 'files/looloo-capture/' + row['filename'], binary=True)
-            if not data.startswith(b'\x89PNG\r\n\x1a\n'):
-                raise ValueError('Device output was not a PNG')
-            (output / args.profile / row['filename']).write_bytes(data)
-        except (subprocess.CalledProcessError, ValueError):
-            entry.update(status='failed', notes='PNG export failed')
-    write_manifests(output, entries)
-    counts = {s: sum(r['status'] == s for r in entries) for s in ('captured', 'skipped', 'failed')}
-    print(f"Capture complete: {counts['captured']} captured, {counts['skipped']} skipped, {counts['failed']} failed. Output: {output}")
-    return 1 if counts['failed'] or instrumentation.returncode or 'FAILURES!!!' in instrumentation.stdout else 0
+        if args.clean:
+            for row in inventory():
+                (output / args.profile / row['filename']).unlink(missing_ok=True)
+        if args.install:
+            run([str(ROOT / 'gradlew'), 'assembleDebug', 'assembleDebugAndroidTest'], cwd=ROOT)
+            for path in ('app/build/outputs/apk/debug/app-debug.apk', 'app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk'):
+                command('install', '-r', str(ROOT / path))
+        runners = command('shell', 'pm', 'list', 'instrumentation')
+        runner = PACKAGE + '.test/androidx.test.runner.AndroidJUnitRunner'
+        if runner not in runners:
+            raise ValueError('Capture instrumentation is not installed; rerun with --install')
+        metadata = {'device_serial': serial, 'device_model': command('shell', 'getprop', 'ro.product.model').strip(),
+                    'orientation': 'portrait', 'timestamp': dt.datetime.now(dt.timezone.utc).isoformat(), 'profile': args.profile}
+        cleanup_device(command)
+        def instrument(screen_id):
+            return subprocess.run([adb, '-s', serial, 'shell', 'am', 'instrument', '-w', '-r',
+                '-e', 'class', PACKAGE + '.screenshots.ShowcaseCaptureTest#captureInventory',
+                '-e', 'screen_id', screen_id, '-e', 'utilities', str(args.include_utilities).lower(), runner],
+                capture_output=True, text=True, timeout=120)
+        entries = capture_batch(rows, metadata, args.profile, output, command, instrument, args.include_utilities)
+        counts = {s: sum(r['status'] == s for r in entries) for s in ('captured', 'skipped', 'failed')}
+        print(f"Capture complete: {counts['captured']} captured, {counts['skipped']} skipped, {counts['failed']} failed. Output: {output}")
+        return 1 if counts['failed'] else 0
+    finally:
+        cleanup_device(command)
+
 
 
 if __name__ == '__main__':
+    def interrupted(signum, frame):
+        raise KeyboardInterrupt
+    signal.signal(signal.SIGTERM, interrupted)
     try:
         sys.exit(main())
-    except (ValueError, OSError, subprocess.CalledProcessError) as error:
+    except KeyboardInterrupt:
+        print('Capture interrupted; cleanup attempted and partial manifest preserved.', file=sys.stderr)
+        sys.exit(130)
+    except (ValueError, OSError, subprocess.SubprocessError) as error:
         print(f'Capture stopped: {error}', file=sys.stderr)
         sys.exit(1)
