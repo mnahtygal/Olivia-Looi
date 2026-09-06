@@ -1,0 +1,587 @@
+[
+  {
+    "id": "home_main",
+    "filename": "01_home_main.png",
+    "title": "Home Main",
+    "category": "home",
+    "notes": "Production screen; seeded saved-state fixture where supported.",
+    "duration_seconds": 4,
+    "public_default": true
+  },
+  {
+    "id": "home_music_picker",
+    "filename": "02_home_music_picker.png",
+    "title": "Home Music Picker",
+    "category": "home",
+    "notes": "Production screen; seeded saved-state fixture where supported.",
+    "duration_seconds": 4,
+    "public_default": true
+  },
+  {
+    "id": "home_learn_picker",
+    "filename": "03_home_learn_picker.png",
+    "title": "Home Learn Picker",
+    "category": "home",
+    "notes": "Production screen; seeded saved-state fixture where supported.",
+    "duration_seconds": 4,
+    "public_default": true
+  },
+  {
+    "id": "home_story_entry",
+    "filename": "04_home_story_entry.png",
+    "title": "Home Story Entry",
+    "category": "home",
+    "notes": "Production screen; seeded saved-state fixture where supported.",
+    "duration_seconds": 4,
+    "public_default": true
+  },
+  {
+    "id": "games_main",
+    "filename": "05_games_main.png",
+    "title": "Games Main",
+    "category": "games",
+    "notes": "Production screen; seeded saved-state fixture where supported.",
+    "duration_seconds": 4,
+    "public_default": true
+  },
+  {
+    "id": "games_main_lower",
+    "filename": "06_games_main_lower.png",
+    "title": "Games Main Lower",
+    "category": "games",
+    "notes": "Production screen; seeded saved-state fixture where supported.",
+    "duration_seconds": 4,
+    "public_default": true
+  },
+  {
+    "id": "memory_match_start",
+    "filename": "07_memory_match_start.png",
+    "title": "Memory Match Start",
+    "category": "games",
+    "notes": "Production screen; seeded saved-state fixture where supported.",
+    "duration_seconds": 4,
+    "public_default": true
+  },
+  {
+    "id": "memory_match_in_progress",
+    "filename": "08_memory_match_in_progress.png",
+    "title": "Memory Match In Progress",
+    "category": "games",
+    "notes": "Production screen; seeded saved-state fixture where supported.",
+    "duration_seconds": 4,
+    "public_default": true
+  },
+  {
+    "id": "coloring_main",
+    "filename": "09_coloring_main.png",
+    "title": "Coloring Main",
+    "category": "games",
+    "notes": "Production screen; seeded saved-state fixture where supported.",
+    "duration_seconds": 4,
+    "public_default": true
+  },
+  {
+    "id": "speak_spell_main",
+    "filename": "10_speak_spell_main.png",
+    "title": "Speak Spell Main",
+    "category": "learn",
+    "notes": "Production screen; seeded saved-state fixture where supported.",
+    "duration_seconds": 4,
+    "public_default": true
+  },
+  {
+    "id": "speak_spell_active",
+    "filename": "11_speak_spell_active.png",
+    "title": "Speak Spell Active",
+    "category": "learn",
+    "notes": "Production screen; seeded saved-state fixture where supported.",
+    "duration_seconds": 4,
+    "public_default": true
+  },
+  {
+    "id": "animal_sounds_main",
+    "filename": "12_animal_sounds_main.png",
+    "title": "Animal Sounds Main",
+    "category": "learn",
+    "notes": "Production screen; seeded saved-state fixture where supported.",
+    "duration_seconds": 4,
+    "public_default": true
+  },
+  {
+    "id": "animal_sounds_selected",
+    "filename": "13_animal_sounds_selected.png",
+    "title": "Animal Sounds Selected",
+    "category": "learn",
+    "notes": "Production screen; seeded saved-state fixture where supported.",
+    "duration_seconds": 4,
+    "public_default": true
+  },
+  {
+    "id": "count_main",
+    "filename": "14_count_main.png",
+    "title": "Count Main",
+    "category": "learn",
+    "notes": "Production screen; seeded saved-state fixture where supported.",
+    "duration_seconds": 4,
+    "public_default": true
+  },
+  {
+    "id": "count_active",
+    "filename": "15_count_active.png",
+    "title": "Count Active",
+    "category": "learn",
+    "notes": "Production screen; seeded saved-state fixture where supported.",
+    "duration_seconds": 4,
+    "public_default": true
+  },
+  {
+    "id": "math_level_picker",
+    "filename": "16_math_level_picker.png",
+    "title": "Math Level Picker",
+    "category": "learn",
+    "notes": "Production screen; seeded saved-state fixture where supported.",
+    "duration_seconds": 4,
+    "public_default": true
+  },
+  {
+    "id": "math_single_digit",
+    "filename": "17_math_single_digit.png",
+    "title": "Math Single Digit",
+    "category": "learn",
+    "notes": "Production screen; seeded saved-state fixture where supported.",
+    "duration_seconds": 4,
+    "public_default": true
+  },
+  {
+    "id": "math_double_digit",
+    "filename": "18_math_double_digit.png",
+    "title": "Math Double Digit",
+    "category": "learn",
+    "notes": "Production screen; seeded saved-state fixture where supported.",
+    "duration_seconds": 4,
+    "public_default": true
+  },
+  {
+    "id": "math_triple_digit",
+    "filename": "19_math_triple_digit.png",
+    "title": "Math Triple Digit",
+    "category": "learn",
+    "notes": "Production screen; seeded saved-state fixture where supported.",
+    "duration_seconds": 4,
+    "public_default": true
+  },
+  {
+    "id": "math_mixed",
+    "filename": "20_math_mixed.png",
+    "title": "Math Mixed",
+    "category": "learn",
+    "notes": "Production screen; seeded saved-state fixture where supported.",
+    "duration_seconds": 4,
+    "public_default": true
+  },
+  {
+    "id": "math_completion",
+    "filename": "21_math_completion.png",
+    "title": "Math Completion",
+    "category": "learn",
+    "notes": "Production screen; seeded saved-state fixture where supported.",
+    "duration_seconds": 4,
+    "public_default": true
+  },
+  {
+    "id": "abc_adventure_picker",
+    "filename": "22_abc_adventure_picker.png",
+    "title": "Abc Adventure Picker",
+    "category": "learn",
+    "notes": "Production screen; seeded saved-state fixture where supported.",
+    "duration_seconds": 4,
+    "public_default": true
+  },
+  {
+    "id": "abc_learn",
+    "filename": "23_abc_learn.png",
+    "title": "Abc Learn",
+    "category": "learn",
+    "notes": "Production screen; seeded saved-state fixture where supported.",
+    "duration_seconds": 4,
+    "public_default": true
+  },
+  {
+    "id": "abc_find_letter",
+    "filename": "24_abc_find_letter.png",
+    "title": "Abc Find Letter",
+    "category": "learn",
+    "notes": "Production screen; seeded saved-state fixture where supported.",
+    "duration_seconds": 4,
+    "public_default": true
+  },
+  {
+    "id": "abc_starts_with",
+    "filename": "25_abc_starts_with.png",
+    "title": "Abc Starts With",
+    "category": "learn",
+    "notes": "Production screen; seeded saved-state fixture where supported.",
+    "duration_seconds": 4,
+    "public_default": true
+  },
+  {
+    "id": "abc_completion",
+    "filename": "26_abc_completion.png",
+    "title": "Abc Completion",
+    "category": "learn",
+    "notes": "Production screen; seeded saved-state fixture where supported.",
+    "duration_seconds": 4,
+    "public_default": true
+  },
+  {
+    "id": "shapes_picker",
+    "filename": "27_shapes_picker.png",
+    "title": "Shapes Picker",
+    "category": "learn",
+    "notes": "Production screen; seeded saved-state fixture where supported.",
+    "duration_seconds": 4,
+    "public_default": true
+  },
+  {
+    "id": "shapes_learn",
+    "filename": "28_shapes_learn.png",
+    "title": "Shapes Learn",
+    "category": "learn",
+    "notes": "Production screen; seeded saved-state fixture where supported.",
+    "duration_seconds": 4,
+    "public_default": true
+  },
+  {
+    "id": "shapes_find_shape",
+    "filename": "29_shapes_find_shape.png",
+    "title": "Shapes Find Shape",
+    "category": "learn",
+    "notes": "Production screen; seeded saved-state fixture where supported.",
+    "duration_seconds": 4,
+    "public_default": true
+  },
+  {
+    "id": "shapes_find_color_shape",
+    "filename": "30_shapes_find_color_shape.png",
+    "title": "Shapes Find Color Shape",
+    "category": "learn",
+    "notes": "Production screen; seeded saved-state fixture where supported.",
+    "duration_seconds": 4,
+    "public_default": true
+  },
+  {
+    "id": "shapes_completion",
+    "filename": "31_shapes_completion.png",
+    "title": "Shapes Completion",
+    "category": "learn",
+    "notes": "Production screen; seeded saved-state fixture where supported.",
+    "duration_seconds": 4,
+    "public_default": true
+  },
+  {
+    "id": "puzzle_picture_picker",
+    "filename": "32_puzzle_picture_picker.png",
+    "title": "Puzzle Picture Picker",
+    "category": "games",
+    "notes": "Production screen; seeded saved-state fixture where supported.",
+    "duration_seconds": 4,
+    "public_default": true
+  },
+  {
+    "id": "puzzle_piece_picker",
+    "filename": "33_puzzle_piece_picker.png",
+    "title": "Puzzle Piece Picker",
+    "category": "games",
+    "notes": "Production screen; seeded saved-state fixture where supported.",
+    "duration_seconds": 4,
+    "public_default": true
+  },
+  {
+    "id": "puzzle_6_piece_start",
+    "filename": "34_puzzle_6_piece_start.png",
+    "title": "Puzzle 6 Piece Start",
+    "category": "games",
+    "notes": "Production screen; seeded saved-state fixture where supported.",
+    "duration_seconds": 4,
+    "public_default": true
+  },
+  {
+    "id": "puzzle_6_piece_progress",
+    "filename": "35_puzzle_6_piece_progress.png",
+    "title": "Puzzle 6 Piece Progress",
+    "category": "games",
+    "notes": "Production screen; seeded saved-state fixture where supported.",
+    "duration_seconds": 4,
+    "public_default": true
+  },
+  {
+    "id": "puzzle_9_piece_start",
+    "filename": "36_puzzle_9_piece_start.png",
+    "title": "Puzzle 9 Piece Start",
+    "category": "games",
+    "notes": "Production screen; seeded saved-state fixture where supported.",
+    "duration_seconds": 4,
+    "public_default": true
+  },
+  {
+    "id": "puzzle_12_piece_start",
+    "filename": "37_puzzle_12_piece_start.png",
+    "title": "Puzzle 12 Piece Start",
+    "category": "games",
+    "notes": "Production screen; seeded saved-state fixture where supported.",
+    "duration_seconds": 4,
+    "public_default": true
+  },
+  {
+    "id": "puzzle_completion",
+    "filename": "38_puzzle_completion.png",
+    "title": "Puzzle Completion",
+    "category": "games",
+    "notes": "Production screen; seeded saved-state fixture where supported.",
+    "duration_seconds": 4,
+    "public_default": true
+  },
+  {
+    "id": "piano_free_play",
+    "filename": "39_piano_free_play.png",
+    "title": "Piano Free Play",
+    "category": "music",
+    "notes": "Production screen; seeded saved-state fixture where supported.",
+    "duration_seconds": 4,
+    "public_default": true
+  },
+  {
+    "id": "piano_guided_song",
+    "filename": "40_piano_guided_song.png",
+    "title": "Piano Guided Song",
+    "category": "music",
+    "notes": "Production screen; seeded saved-state fixture where supported.",
+    "duration_seconds": 4,
+    "public_default": true
+  },
+  {
+    "id": "piano_song_complete",
+    "filename": "41_piano_song_complete.png",
+    "title": "Piano Song Complete",
+    "category": "music",
+    "notes": "Production screen; seeded saved-state fixture where supported.",
+    "duration_seconds": 4,
+    "public_default": true
+  },
+  {
+    "id": "drums_free_play",
+    "filename": "42_drums_free_play.png",
+    "title": "Drums Free Play",
+    "category": "music",
+    "notes": "Production screen; seeded saved-state fixture where supported.",
+    "duration_seconds": 4,
+    "public_default": true
+  },
+  {
+    "id": "drums_copy_beat_demo",
+    "filename": "43_drums_copy_beat_demo.png",
+    "title": "Drums Copy Beat Demo",
+    "category": "music",
+    "notes": "Production screen; seeded saved-state fixture where supported.",
+    "duration_seconds": 4,
+    "public_default": true
+  },
+  {
+    "id": "drums_copy_beat_your_turn",
+    "filename": "44_drums_copy_beat_your_turn.png",
+    "title": "Drums Copy Beat Your Turn",
+    "category": "music",
+    "notes": "Production screen; seeded saved-state fixture where supported.",
+    "duration_seconds": 4,
+    "public_default": true
+  },
+  {
+    "id": "drums_completion",
+    "filename": "45_drums_completion.png",
+    "title": "Drums Completion",
+    "category": "music",
+    "notes": "Production screen; seeded saved-state fixture where supported.",
+    "duration_seconds": 4,
+    "public_default": true
+  },
+  {
+    "id": "billiards_mode_picker",
+    "filename": "46_billiards_mode_picker.png",
+    "title": "Billiards Mode Picker",
+    "category": "games",
+    "notes": "Production screen; seeded saved-state fixture where supported.",
+    "duration_seconds": 4,
+    "public_default": true
+  },
+  {
+    "id": "billiards_free_play_rack",
+    "filename": "47_billiards_free_play_rack.png",
+    "title": "Billiards Free Play Rack",
+    "category": "games",
+    "notes": "Production screen; seeded saved-state fixture where supported.",
+    "duration_seconds": 4,
+    "public_default": true
+  },
+  {
+    "id": "billiards_aiming",
+    "filename": "48_billiards_aiming.png",
+    "title": "Billiards Aiming",
+    "category": "games",
+    "notes": "Production screen; seeded saved-state fixture where supported.",
+    "duration_seconds": 4,
+    "public_default": true
+  },
+  {
+    "id": "billiards_versus_olivia_turn",
+    "filename": "49_billiards_versus_olivia_turn.png",
+    "title": "Billiards Versus Olivia Turn",
+    "category": "games",
+    "notes": "Production screen; seeded saved-state fixture where supported.",
+    "duration_seconds": 4,
+    "public_default": true
+  },
+  {
+    "id": "billiards_versus_looloo_turn",
+    "filename": "50_billiards_versus_looloo_turn.png",
+    "title": "Billiards Versus Looloo Turn",
+    "category": "games",
+    "notes": "Production screen; seeded saved-state fixture where supported.",
+    "duration_seconds": 4,
+    "public_default": true
+  },
+  {
+    "id": "billiards_try_pocket",
+    "filename": "51_billiards_try_pocket.png",
+    "title": "Billiards Try Pocket",
+    "category": "games",
+    "notes": "Production screen; seeded saved-state fixture where supported.",
+    "duration_seconds": 4,
+    "public_default": true
+  },
+  {
+    "id": "story_library",
+    "filename": "52_story_library.png",
+    "title": "Story Library",
+    "category": "stories",
+    "notes": "Production screen; seeded saved-state fixture where supported.",
+    "duration_seconds": 4,
+    "public_default": true
+  },
+  {
+    "id": "story_opening_moonlight_snowman",
+    "filename": "53_story_opening_moonlight_snowman.png",
+    "title": "Story Opening Moonlight Snowman",
+    "category": "stories",
+    "notes": "Production screen; seeded saved-state fixture where supported.",
+    "duration_seconds": 4,
+    "public_default": true
+  },
+  {
+    "id": "story_read_to_me",
+    "filename": "54_story_read_to_me.png",
+    "title": "Story Read To Me",
+    "category": "stories",
+    "notes": "Production screen; seeded saved-state fixture where supported.",
+    "duration_seconds": 4,
+    "public_default": true
+  },
+  {
+    "id": "story_read_myself",
+    "filename": "55_story_read_myself.png",
+    "title": "Story Read Myself",
+    "category": "stories",
+    "notes": "Production screen; seeded saved-state fixture where supported.",
+    "duration_seconds": 4,
+    "public_default": true
+  },
+  {
+    "id": "story_eliana_duck_page",
+    "filename": "56_story_eliana_duck_page.png",
+    "title": "Story Eliana Duck Page",
+    "category": "stories",
+    "notes": "Production screen; seeded saved-state fixture where supported.",
+    "duration_seconds": 4,
+    "public_default": true
+  },
+  {
+    "id": "story_rainbow_page",
+    "filename": "57_story_rainbow_page.png",
+    "title": "Story Rainbow Page",
+    "category": "stories",
+    "notes": "Production screen; seeded saved-state fixture where supported.",
+    "duration_seconds": 4,
+    "public_default": true
+  },
+  {
+    "id": "story_sleepy_puppy_page",
+    "filename": "58_story_sleepy_puppy_page.png",
+    "title": "Story Sleepy Puppy Page",
+    "category": "stories",
+    "notes": "Production screen; seeded saved-state fixture where supported.",
+    "duration_seconds": 4,
+    "public_default": true
+  },
+  {
+    "id": "story_little_star_page",
+    "filename": "59_story_little_star_page.png",
+    "title": "Story Little Star Page",
+    "category": "stories",
+    "notes": "Production screen; seeded saved-state fixture where supported.",
+    "duration_seconds": 4,
+    "public_default": true
+  },
+  {
+    "id": "story_completion",
+    "filename": "60_story_completion.png",
+    "title": "Story Completion",
+    "category": "stories",
+    "notes": "Production screen; seeded saved-state fixture where supported.",
+    "duration_seconds": 4,
+    "public_default": true
+  },
+  {
+    "id": "tic_tac_toe_start",
+    "filename": "61_tic_tac_toe_start.png",
+    "title": "Tic Tac Toe Start",
+    "category": "games",
+    "notes": "Production screen; seeded saved-state fixture where supported.",
+    "duration_seconds": 4,
+    "public_default": true
+  },
+  {
+    "id": "tic_tac_toe_in_progress",
+    "filename": "62_tic_tac_toe_in_progress.png",
+    "title": "Tic Tac Toe In Progress",
+    "category": "games",
+    "notes": "Production screen; seeded saved-state fixture where supported.",
+    "duration_seconds": 4,
+    "public_default": true
+  },
+  {
+    "id": "tic_tac_toe_completion",
+    "filename": "63_tic_tac_toe_completion.png",
+    "title": "Tic Tac Toe Completion",
+    "category": "games",
+    "notes": "Production screen; seeded saved-state fixture where supported.",
+    "duration_seconds": 4,
+    "public_default": true
+  },
+  {
+    "id": "apps_main",
+    "filename": "64_apps_main.png",
+    "title": "Apps Main",
+    "category": "home",
+    "notes": "Production screen; seeded saved-state fixture where supported.",
+    "duration_seconds": 4,
+    "public_default": false
+  },
+  {
+    "id": "settings_main",
+    "filename": "65_settings_main.png",
+    "title": "Settings Main",
+    "category": "home",
+    "notes": "Production screen; seeded saved-state fixture where supported.",
+    "duration_seconds": 4,
+    "public_default": false
+  }
+]

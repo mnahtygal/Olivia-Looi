@@ -1,0 +1,14 @@
+// Local diagnostic task only; does not alter the app's build configuration or dependencies.
+allprojects {
+    afterEvaluate { project ->
+        if (project.path == ':app') {
+            tasks.register('writeCaptureCheckClasspath') {
+                doLast {
+                    def destination = rootProject.layout.buildDirectory.file('looloo-screenshots/fixture-classpath.txt').get().asFile
+                    destination.parentFile.mkdirs()
+                    destination.text = tasks.named('testDebugUnitTest').get().classpath.asPath
+                }
+            }
+        }
+    }
+}
