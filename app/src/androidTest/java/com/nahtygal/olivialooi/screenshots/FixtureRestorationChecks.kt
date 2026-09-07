@@ -23,5 +23,18 @@ object FixtureRestorationChecks {
         check(FixtureMutableState(true).restoredValue() is MutableState<*>)
         check(FixtureMutableIntState(0).restoredValue() is MutableIntState)
         check(FixtureMutableLongState(0).restoredValue() is MutableLongState)
+
+        // Drums has two restored providers that can share one generated Compose key.
+        // The old key->slot map retained Boolean:true and compared it with the first
+        // saved provider (the Drum codec String). Key+occurrence keeps both aligned.
+        val registry = FixtureRegistry(listOf(FixtureMutableState(before), FixtureMutableState(true)))
+        val restoredDrum = registry.consumeRestored("shared")
+        val restoredOpening = registry.consumeRestored("shared")
+        registry.registerProvider("shared") { restoredDrum }
+        registry.registerProvider("shared") { restoredOpening }
+        val saved = registry.performSave().getValue("shared")
+        check((saved[0] as MutableState<*>).value == before)
+        check((saved[1] as MutableState<*>).value == true)
+        registry.assertConsumed()
     }
 }

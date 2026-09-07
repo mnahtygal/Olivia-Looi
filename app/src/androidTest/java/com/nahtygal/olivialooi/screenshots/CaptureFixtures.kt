@@ -68,13 +68,15 @@ data class FixtureMutableLongState(override val payload: Long) : FixtureSlot {
 
 class FixtureRegistry(private val values: List<FixtureSlot>) : SaveableStateRegistry {
     private val delegate = SaveableStateRegistry(null) { true }
-    private val restored = linkedMapOf<String, FixtureSlot>()
+    // Compose can legally register multiple rememberSaveable providers under one
+    // generated key. Preserve each occurrence instead of letting a later slot replace it.
+    private val restored = linkedMapOf<String, MutableList<FixtureSlot>>()
     var consumed = 0
         private set
     override fun consumeRestored(key: String): Any? {
         if (consumed >= values.size) return null
         val slot = values[consumed++]
-        restored[key] = slot
+        restored.getOrPut(key) { mutableListOf() }.add(slot)
         return slot.restoredValue()
     }
     override fun registerProvider(key: String, valueProvider: () -> Any?): SaveableStateRegistry.Entry = delegate.registerProvider(key, valueProvider)
@@ -83,12 +85,18 @@ class FixtureRegistry(private val values: List<FixtureSlot>) : SaveableStateRegi
     fun assertConsumed() {
         check(consumed == values.size) { "Saved-state fixture contract changed" }
         val saved = performSave()
-        restored.forEach { (key, slot) ->
-            val actual = slot.savedPayload(saved[key]?.firstOrNull())
-            // Story narration and Drum replay identities are asynchronous guards, not
-            // rendered state. Every other persisted field remains strict.
-            check(FixtureEquivalence.matches(slot.payload, actual)) {
-                "Restored fixture did not survive its production saver: $key; ${FixtureEquivalence.difference(slot.payload, actual)}"
+        restored.forEach { (key, slots) ->
+            val savedValues = saved[key].orEmpty()
+            slots.forEachIndexed { occurrence, slot ->
+                check(occurrence < savedValues.size) {
+                    "Restored fixture save slot missing: $key occurrence=$occurrence"
+                }
+                val actual = slot.savedPayload(savedValues[occurrence])
+                // Story narration and Drum replay identities are asynchronous guards, not
+                // rendered state. Every other persisted field remains strict.
+                check(FixtureEquivalence.matches(slot.payload, actual)) {
+                    "Restored fixture did not survive its production saver: $key occurrence=$occurrence; ${FixtureEquivalence.difference(slot.payload, actual)}"
+                }
             }
         }
     }

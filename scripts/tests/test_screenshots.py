@@ -44,6 +44,9 @@ class ScreenshotTests(unittest.TestCase):
         for profile in capture.PROFILES:
             self.assertEqual(profile, capture.parser().parse_args(['--profile', profile]).profile)
 
+    def test_apk_install_timeout_allows_slow_physical_devices(self):
+        self.assertEqual(120, capture.INSTALL_TIMEOUT_SECONDS)
+
     def test_unknown_profile(self):
         with self.assertRaises(SystemExit):
             capture.parser().parse_args(['--profile', 'unknown'])

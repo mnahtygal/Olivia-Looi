@@ -18,6 +18,7 @@ TEST_PACKAGE = PACKAGE + '.test'
 INSTRUMENTATION_EMPTY_ACTIVITY = 'androidx.test.core.app.InstrumentationActivityInvoker$EmptyActivity'
 PROFILES = ('tablet', 'phone', 'emulator')
 CATEGORIES = ('home', 'games', 'learn', 'music', 'stories', 'all')
+INSTALL_TIMEOUT_SECONDS = 120
 
 
 def sanitize_public(value, limit=240):
@@ -311,7 +312,8 @@ def main(argv=None):
         }, args.profile))
         raise
     def command(*parts, binary=False):
-        return run([adb, '-s', serial, *parts], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=not binary, timeout=30 if parts[0] == 'install' else 10).stdout
+        return run([adb, '-s', serial, *parts], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=not binary,
+                   timeout=INSTALL_TIMEOUT_SECONDS if parts[0] == 'install' else 10).stdout
     pending = {r['id']: {'status': 'blocked', 'notes': 'Capture not started or setup failed'} for r in rows}
     write_manifests(output, manifest_entries(rows, pending, {
         'device_serial': serial, 'device_model': None, 'app_version': None, 'app_label': 'LooLoo',
