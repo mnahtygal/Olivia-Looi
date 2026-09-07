@@ -123,6 +123,11 @@ class ScreenshotTests(unittest.TestCase):
     def test_shell_strict_mode(self):
         self.assertIn('set -euo pipefail', (capture.ROOT / 'scripts/capture_looloo_screenshots.sh').read_text())
 
+    def test_capture_does_not_wait_for_physical_audio_initialization(self):
+        source = (capture.ROOT / 'app/src/androidTest/java/com/nahtygal/olivialooi/screenshots/ShowcaseCaptureTest.kt').read_text()
+        self.assertNotIn('textPresent("Getting the")', source)
+        self.assertNotIn('captureStage = "audio_ready"', source)
+
 
 if __name__ == '__main__':
     unittest.main()

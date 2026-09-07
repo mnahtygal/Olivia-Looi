@@ -177,12 +177,11 @@ class ShowcaseCaptureTest {
                     compose.waitUntil(10_000) { compose.onAllNodesWithTag("capture-ready").fetchSemanticsNodes().size==1 }
                     captureStage = "restoration_validation"
                     compose.runOnIdle { fixture.registry.assertConsumed() }
-                    if(id.startsWith("piano_") || id.startsWith("drums_")) {
-                        captureStage = "audio_ready"
-                        compose.waitUntil(15_000) { !textPresent("Getting the") }
-                    }
                     captureStage = "fixture_prepare"
-                    compose.mainClock.advanceTimeBy(if(id=="drums_copy_beat_demo") 450 else 128)
+                    // Music screens render their deterministic state before SoundPool is
+                    // ready. Stay before the drum replay delay so capture never depends on
+                    // physical-device audio callbacks or transient pad flashes.
+                    compose.mainClock.advanceTimeBy(128)
                     prepare(id)
                     // Flush measure/draw after semantic state is available; never arbitrary wall-clock sleep.
                     if (id != "settings_main") compose.waitForIdle()

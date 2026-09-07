@@ -85,9 +85,10 @@ class FixtureRegistry(private val values: List<FixtureSlot>) : SaveableStateRegi
         val saved = performSave()
         restored.forEach { (key, slot) ->
             val actual = slot.savedPayload(saved[key]?.firstOrNull())
-            // Story restoration intentionally increments its narration identity.
+            // Story narration and Drum replay identities are asynchronous guards, not
+            // rendered state. Every other persisted field remains strict.
             check(FixtureEquivalence.matches(slot.payload, actual)) {
-                "Restored fixture did not survive its production saver: $key"
+                "Restored fixture did not survive its production saver: $key; ${FixtureEquivalence.difference(slot.payload, actual)}"
             }
         }
     }
@@ -98,9 +99,36 @@ object FixtureEquivalence {
     @JvmStatic
     fun matches(expected: Any?, actual: Any?): Boolean {
         if (expected !is String || actual !is String) return expected == actual
-        val fields = expected.split('|')
-        val story = fields.size == 6 && fields[0] == "1" && StoryCatalog.find(fields[1]) != null
-        return if (story) actual.substringBeforeLast('|') == expected.substringBeforeLast('|') else actual == expected
+        val story = expected.split('|').let { it.size == 6 && it[0] == "1" && StoryCatalog.find(it[1]) != null }
+        if (story) return actual.substringBeforeLast('|') == expected.substringBeforeLast('|')
+        val expectedDrum = DrumStateCodec.decode(expected)
+        val actualDrum = DrumStateCodec.decode(actual)
+        if (expectedDrum != null && actualDrum != null) {
+            return expectedDrum.copy(replayIdentity = 0) == actualDrum.copy(replayIdentity = 0)
+        }
+        return actual == expected
+    }
+
+    @JvmStatic
+    fun difference(expected: Any?, actual: Any?): String {
+        if (expected is String && actual is String) {
+            val expectedDrum = DrumStateCodec.decode(expected)
+            val actualDrum = DrumStateCodec.decode(actual)
+            if (expectedDrum != null && actualDrum != null) {
+                val fields = listOf(
+                    "mode" to (expectedDrum.mode to actualDrum.mode),
+                    "pattern" to (expectedDrum.pattern.map { it.stableId } to actualDrum.pattern.map { it.stableId }),
+                    "completedRounds" to (expectedDrum.completedRounds to actualDrum.completedRounds),
+                    "position" to (expectedDrum.position to actualDrum.position),
+                    "phase" to (expectedDrum.phase to actualDrum.phase),
+                    "replayIdentity" to (expectedDrum.replayIdentity to actualDrum.replayIdentity),
+                )
+                return fields.filter { (_, pair) -> pair.first != pair.second }
+                    .joinToString { (name, pair) -> "$name expected=${pair.first} actual=${pair.second}" }
+                    .ifEmpty { "no decoded Drum field difference" }
+            }
+        }
+        return "expected=${expected?.javaClass?.simpleName}:${expected.toString().take(120)} actual=${actual?.javaClass?.simpleName}:${actual.toString().take(120)}"
     }
 }
 
