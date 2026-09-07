@@ -2,6 +2,7 @@ import java.nio.file.*;
 import java.util.regex.*;
 public class CaptureFixtureCheck {
   public static void main(String[] args) throws Exception {
+    Class.forName("com.nahtygal.olivialooi.screenshots.FixtureRestorationChecks").getMethod("run").invoke(null);
     Class<?> c=Class.forName("com.nahtygal.olivialooi.screenshots.CaptureFixtures");
     Object singleton=c.getField("INSTANCE").get(null);
     String inventory=Files.readString(Path.of(args[0]));

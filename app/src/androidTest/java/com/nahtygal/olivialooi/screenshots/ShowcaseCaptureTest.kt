@@ -18,6 +18,8 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.test.platform.app.InstrumentationRegistry
 import com.nahtygal.olivialooi.ui.theme.OliviaLooiTheme
 import java.io.File
+import java.io.PrintWriter
+import java.io.StringWriter
 import java.time.Instant
 import org.json.JSONArray
 import org.json.JSONObject
@@ -39,6 +41,18 @@ class ShowcaseCaptureTest {
         compose.mainClock.advanceTimeBy(64)
     }
     private fun textPresent(value: String): Boolean = compose.onAllNodes(hasText(value,substring=true) or hasContentDescription(value,substring=true),useUnmergedTree=true).fetchSemanticsNodes().isNotEmpty()
+    private fun sanitized(value: String?): String = (value ?: "")
+        .replace(Regex("[/\\\\][^\\s:]+"), "<path>")
+        .replace(Regex("[\\r\\n\\t]+"), " ")
+        .replace(Regex("[^\\p{Print}]"), "?")
+        .trim()
+        .take(240)
+    private fun detail(error: Throwable): String = buildString {
+        appendLine("${error.javaClass.name}: ${error.message ?: ""}")
+        val trace = StringWriter()
+        error.printStackTrace(PrintWriter(trace))
+        append(trace)
+    }
     private fun prepare(id: String) {
         when(id) {
             "home_music_picker" -> click("Music")
@@ -97,6 +111,7 @@ class ShowcaseCaptureTest {
         val inventory=JSONArray(instrumentation.context.assets.open("looloo_screenshots.json").bufferedReader().use { it.readText() })
         assertEquals(65,inventory.length())
         val output=File(instrumentation.targetContext.filesDir,"looloo-capture").apply { mkdirs() }
+        File(output,"logs").mkdirs()
         val results=JSONObject()
         var current by mutableStateOf<Pair<String,CaptureFixture>?>(null)
         // Virtual time is controlled: transient demo/AI/aim states never race wall-clock sleeps.
@@ -116,25 +131,33 @@ class ShowcaseCaptureTest {
             if(screenId!=entry.getString("id")) continue
             val id=entry.getString("id")
             val record=JSONObject().put("app_version",info.versionName).put("app_label",instrumentation.targetContext.applicationInfo.loadLabel(instrumentation.targetContext.packageManager).toString()).put("timestamp",Instant.now().toString())
+            var captureStage = "fixture_setup"
             try {
                 if(!entry.getBoolean("public_default") && !utilities) {
                     record.put("status","skipped").put("notes","Utility screen excluded by default; opt in after privacy review")
                 } else {
+                    captureStage = "fixture_create"
                     val fixture=CaptureFixtures.create(id)
+                    captureStage = "composition_attach"
                     compose.runOnIdle { current=null }
                     compose.mainClock.advanceTimeByFrame()
                     compose.runOnIdle { current=id to fixture }
+                    captureStage = "composition_ready"
                     compose.mainClock.advanceTimeBy(64)
                     compose.waitUntil(10_000) { compose.onAllNodesWithTag("capture-ready").fetchSemanticsNodes().size==1 }
+                    captureStage = "restoration_validation"
                     compose.runOnIdle { fixture.registry.assertConsumed() }
                     if(id.startsWith("piano_") || id.startsWith("drums_")) {
+                        captureStage = "audio_ready"
                         compose.waitUntil(15_000) { !textPresent("Getting the") }
                     }
+                    captureStage = "fixture_prepare"
                     compose.mainClock.advanceTimeBy(if(id=="drums_copy_beat_demo") 450 else 128)
                     prepare(id)
                     // Flush measure/draw after semantic state is available; never arbitrary wall-clock sleep.
                     if (id != "settings_main") compose.waitForIdle()
                     instrumentation.waitForIdleSync()
+                    captureStage = "capture_assertions"
                     if(id=="drums_copy_beat_demo") check(textPresent("Listen")) { "Replay phase was not visible" }
                     if(id=="drums_copy_beat_your_turn") check(textPresent("Your turn"))
                     if(id=="billiards_versus_looloo_turn") check(textPresent("LooLoo"))
@@ -142,6 +165,7 @@ class ShowcaseCaptureTest {
                     compose.waitUntil(10_000) {
                         instrumentation.uiAutomation.rootInActiveWindow?.packageName?.toString() == expectedPackage
                     }
+                    captureStage = "screenshot"
                     val bitmap=checkNotNull(instrumentation.uiAutomation.takeScreenshot()) { "Device screenshot unavailable" }
                     check(bitmap.height>bitmap.width) { "Capture requires portrait orientation" }
                     File(output,entry.getString("filename")).outputStream().use { check(bitmap.compress(Bitmap.CompressFormat.PNG,100,it)) }
@@ -159,9 +183,14 @@ class ShowcaseCaptureTest {
                 failures++
                 // Avoid exporting raw stack traces/private paths into the shareable manifest.
                 File(output,entry.getString("filename")).delete()
-                record.put("status","failed").put("error_type",error.javaClass.simpleName)
-                    .put("notes","$id failed: ${error.javaClass.simpleName}; see the per-fixture instrumentation log for details")
-                error.printStackTrace()
+                val logFile = File(output,"logs/$id.log")
+                logFile.writeText("screen_id=$id\ncapture_stage=$captureStage\n\n${detail(error)}")
+                record.put("status","failed")
+                    .put("capture_stage",captureStage)
+                    .put("original_error_type",error.javaClass.simpleName)
+                    .put("original_error_message",sanitized(error.message))
+                    .put("detail_log","logs/$id.log")
+                    .put("notes","$id failed during $captureStage; see the private local detail log")
             } finally {
                 results.put(id,record)
                 File(output,"results.json").writeText(results.toString(2))

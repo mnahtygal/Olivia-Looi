@@ -18,6 +18,15 @@ PROFILES = ('tablet', 'phone', 'emulator')
 CATEGORIES = ('home', 'games', 'learn', 'music', 'stories', 'all')
 
 
+def sanitize_public(value, limit=240):
+    """Keep diagnostics useful without exporting paths, control characters, or traces."""
+    value = str(value or '')
+    value = re.sub(r'[/\\][^\s:]+', '<path>', value)
+    value = re.sub(r'[\r\n\t]+', ' ', value)
+    value = ''.join(ch if ch.isprintable() else '?' for ch in value)
+    return value.strip()[:limit]
+
+
 def inventory():
     rows = json.loads(INVENTORY.read_text())
     for key in ('id', 'filename'):
@@ -152,7 +161,7 @@ def capture_batch(rows, metadata, profile, output, command, instrument, utilitie
         destination = output / profile / row['filename']
         temporary = destination.with_name(destination.name + '.tmp')
         record = {'status': 'failed', 'notes': f'{screen_id}: capture did not finish',
-                  'log_file': f'logs/{screen_id}.log'}
+                  'log_file': f'logs/{screen_id}.log', 'detail_log': f'logs/{screen_id}.log'}
         try:
             destination.unlink(missing_ok=True)
             temporary.unlink(missing_ok=True)
@@ -171,6 +180,16 @@ def capture_batch(rows, metadata, profile, output, command, instrument, utilitie
                 device = json.loads(command('exec-out', 'run-as', PACKAGE, 'cat', 'files/looloo-capture/results.json'))
             except (subprocess.SubprocessError, json.JSONDecodeError):
                 device = {}
+            # The test process writes the underlying exception to app-private storage;
+            # retain it locally for diagnosis while keeping only its relative path public.
+            try:
+                detail = command('exec-out', 'run-as', PACKAGE, 'cat',
+                                 'files/looloo-capture/logs/' + screen_id + '.log', binary=True)
+                if detail:
+                    (output / 'logs' / (screen_id + '.log')).write_bytes(
+                        (log.encode() + b'\n--- device detail ---\n' + (detail if isinstance(detail, bytes) else detail.encode())))
+            except (OSError, subprocess.SubprocessError):
+                pass
             if not isinstance(device, dict) or set(device) - {screen_id}:
                 raise ValueError('Unexpected fixture result IDs')
             reported = device.get(screen_id)
@@ -181,8 +200,16 @@ def capture_batch(rows, metadata, profile, output, command, instrument, utilitie
             if crashed or reported is None:
                 match = re.search(r'\b([A-Za-z][A-Za-z0-9]{0,90}(?:Exception|Error))\b', log)
                 kind = match.group(1) if match else ('InstrumentationCrash' if crashed else 'MissingFixtureResult')
-                record.update(status='failed', error_type=kind,
-                              notes=f'{screen_id}: {kind}; inspect logs/{screen_id}.log')
+                message = sanitize_public(log.splitlines()[-1] if log.splitlines() else kind)
+                record.update(status='failed', error_type=kind, original_error_type=kind,
+                              original_error_message=message, capture_stage='instrumentation',
+                              detail_log=f'logs/{screen_id}.log',
+                              notes=f'{screen_id}: {kind}; inspect the private local detail log')
+            if record.get('status') == 'failed':
+                record.setdefault('capture_stage', 'instrumentation_result')
+                record.setdefault('original_error_type', record.get('error_type', 'InstrumentationReportedFailure'))
+                record.setdefault('original_error_message', sanitize_public(record.get('notes', 'Fixture reported failure')))
+                record.setdefault('detail_log', f'logs/{screen_id}.log')
             if record['status'] == 'captured':
                 data = command('exec-out', 'run-as', PACKAGE, 'cat',
                                'files/looloo-capture/' + row['filename'], binary=True)
@@ -197,7 +224,10 @@ def capture_batch(rows, metadata, profile, output, command, instrument, utilitie
         except (OSError, subprocess.SubprocessError, ValueError) as error:
             # Full details remain local; no raw paths, keys, or infrastructure enter the manifest.
             kind = type(error).__name__
-            record.update(status='failed', error_type=kind, notes=f'{screen_id}: {kind}; inspect logs/{screen_id}.log')
+            record.update(status='failed', error_type=kind, original_error_type=kind,
+                          original_error_message=sanitize_public(str(error)), capture_stage='host_validation',
+                          detail_log=f'logs/{screen_id}.log',
+                          notes=f'{screen_id}: {kind}; inspect the private local detail log')
             detail = str(error)
             if isinstance(error, subprocess.TimeoutExpired):
                 detail = 'Instrumentation/ADB timed out. Device cleanup attempted.\n' + str(error.stdout or '') + str(error.stderr or '')

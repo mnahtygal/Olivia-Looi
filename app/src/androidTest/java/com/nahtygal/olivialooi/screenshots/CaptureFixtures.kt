@@ -61,13 +61,23 @@ class FixtureRegistry(private val values: List<Any?>) : SaveableStateRegistry {
         check(consumed == values.size) { "Saved-state fixture contract changed" }
         val saved = performSave()
         restored.forEach { (key, expected) ->
-            val actual = (saved[key]?.firstOrNull() as? State<*>)?.value
+            val actual = saved[key]?.firstOrNull()
             // Story restoration intentionally increments its narration identity.
-            val story = expected is String && expected.split('|').let { it.size == 6 && StoryCatalog.find(it[1]) != null }
-            check(if (story) (actual as? String)?.substringBeforeLast('|') == (expected as String).substringBeforeLast('|') else actual == expected) {
+            check(FixtureEquivalence.matches(expected, actual)) {
                 "Restored fixture did not survive its production saver: $key"
             }
         }
+    }
+}
+
+/** Narrow equivalence for production-restored state whose identity is deliberately regenerated. */
+object FixtureEquivalence {
+    @JvmStatic
+    fun matches(expected: Any?, actual: Any?): Boolean {
+        if (expected !is String || actual !is String) return expected == actual
+        val fields = expected.split('|')
+        val story = fields.size == 6 && fields[0] == "1" && StoryCatalog.find(fields[1]) != null
+        return if (story) actual.substringBeforeLast('|') == expected.substringBeforeLast('|') else actual == expected
     }
 }
 
