@@ -19,6 +19,7 @@ class Transport:
         self.launched = []
         self.commands = []
         self.cleanup_failure = False
+        self.recents = ''
 
     def instrument(self, screen_id):
         self.current = screen_id
@@ -36,6 +37,8 @@ class Transport:
         self.commands.append(parts)
         if self.cleanup_failure and parts[:3] == ('shell', 'am', 'force-stop'):
             raise OSError('disconnected')
+        if parts == ('shell', 'dumpsys', 'activity', 'recents'):
+            return self.recents
         if parts[0] != 'exec-out':
             return ''
         outcome = self.outcomes.get(self.current, 'captured')
@@ -139,6 +142,20 @@ class IsolationTests(unittest.TestCase):
         self.assertTrue(all(r['status'] == 'captured' for r in entries))
         self.assertTrue(all(r['cleanup'] == 'best_effort_failed' for r in entries))
         self.assertIn(('shell', 'input', 'keyevent', 'KEYCODE_HOME'), transport.commands)
+
+    def test_cleanup_removes_only_instrumentation_empty_activity_task(self):
+        transport = Transport({})
+        transport.recents = '''
+* Recent #0: Task{abc #811 type=standard A=com.nahtygal.olivialooi.test}
+  taskId=811 affinity=10486:com.nahtygal.olivialooi.test
+  realActivity={com.nahtygal.olivialooi.test/androidx.test.core.app.InstrumentationActivityInvoker$EmptyActivity}
+* Recent #1: Task{def #812 type=standard A=com.nahtygal.olivialooi}
+  taskId=812 affinity=com.nahtygal.olivialooi
+  realActivity={com.nahtygal.olivialooi/.MainActivity}
+'''
+        self.execute(transport, [self.rows[0]])
+        self.assertIn(('shell', 'am', 'stack', 'remove', '811'), transport.commands)
+        self.assertNotIn(('shell', 'am', 'stack', 'remove', '812'), transport.commands)
 
     def test_missing_or_bad_results_do_not_stop_later_fixtures(self):
         for outcome in ('missing', 'malformed', 'wrong_id', 'bad_png'):

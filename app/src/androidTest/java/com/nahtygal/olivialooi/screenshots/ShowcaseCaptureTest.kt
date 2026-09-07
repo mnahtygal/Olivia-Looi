@@ -92,14 +92,15 @@ class ShowcaseCaptureTest {
         assertNull(CaptureFixtures.create("animal_sounds_main").registry.consumeRestored("unused"))
         repeat(2) {
             val registry = CaptureFixtures.create("animal_sounds_selected").registry
-            assertEquals("cow", registry.consumeRestored("animal"))
+            assertEquals("cow", (registry.consumeRestored("animal") as MutableState<*>).value)
             val version = registry.consumeRestored("feedback")
-            assertEquals(0, version)
-            assertEquals(true, registry.consumeRestored("showWord"))
+            assertTrue(version is MutableIntState)
+            assertEquals(0, (version as MutableIntState).intValue)
+            assertEquals(true, (registry.consumeRestored("showWord") as MutableState<*>).value)
         }
         val billiards = CaptureFixtures.create("billiards_free_play_rack").registry
-        billiards.consumeRestored("table")
-        assertTrue(billiards.consumeRestored("spokenIdentity") is Long)
+        assertTrue(billiards.consumeRestored("table") is MutableState<*>)
+        assertTrue(billiards.consumeRestored("spokenIdentity") is MutableLongState)
     }
 
     @Test fun productionRestorationContracts() {

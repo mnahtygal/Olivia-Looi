@@ -14,6 +14,8 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 INVENTORY = ROOT / 'app/src/androidTest/assets/looloo_screenshots.json'
 PACKAGE = 'com.nahtygal.olivialooi'
+TEST_PACKAGE = PACKAGE + '.test'
+INSTRUMENTATION_EMPTY_ACTIVITY = 'androidx.test.core.app.InstrumentationActivityInvoker$EmptyActivity'
 PROFILES = ('tablet', 'phone', 'emulator')
 CATEGORIES = ('home', 'games', 'learn', 'music', 'stories', 'all')
 
@@ -136,8 +138,21 @@ def cleanup_device(command):
     """Best effort, bounded ADB calls; do not reboot or touch unrelated app processes."""
     errors = []
     for parts in (('shell', 'am', 'force-stop', PACKAGE),
-                  ('shell', 'am', 'force-stop', PACKAGE + '.test'),
-                  ('shell', 'input', 'keyevent', 'KEYCODE_HOME'),
+                  ('shell', 'am', 'force-stop', TEST_PACKAGE)):
+        try:
+            command(*parts)
+        except (OSError, subprocess.SubprocessError) as error:
+            errors.append(type(error).__name__)
+    try:
+        recents = command('shell', 'dumpsys', 'activity', 'recents')
+        for task_id in instrumentation_task_ids(recents):
+            try:
+                command('shell', 'am', 'stack', 'remove', task_id)
+            except (OSError, subprocess.SubprocessError) as error:
+                errors.append(type(error).__name__)
+    except (OSError, subprocess.SubprocessError) as error:
+        errors.append(type(error).__name__)
+    for parts in (('shell', 'input', 'keyevent', 'KEYCODE_HOME'),
                   ('shell', 'am', 'start', '-a', 'android.intent.action.MAIN',
                    '-c', 'android.intent.category.HOME')):
         try:
@@ -145,6 +160,21 @@ def cleanup_device(command):
         except (OSError, subprocess.SubprocessError) as error:
             errors.append(type(error).__name__)
     return errors
+
+
+def instrumentation_task_ids(recents):
+    """Find only ActivityScenario's test-package EmptyActivity tasks."""
+    task_ids = set()
+    blocks = re.split(r'(?=\* Recent #|Task\{)', recents or '')
+    for block in blocks:
+        if TEST_PACKAGE not in block or INSTRUMENTATION_EMPTY_ACTIVITY not in block:
+            continue
+        for pattern in (r'\btaskId=(\d+)\b', r'\bTask\{[^\n#]*#(\d+)\b'):
+            match = re.search(pattern, block)
+            if match:
+                task_ids.add(match.group(1))
+                break
+    return sorted(task_ids, key=int)
 
 
 def capture_batch(rows, metadata, profile, output, command, instrument, utilities=False):

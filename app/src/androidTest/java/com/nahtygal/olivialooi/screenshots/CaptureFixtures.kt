@@ -36,19 +36,46 @@ import kotlin.random.Random
  * Existing private Savers are invoked only to serialize valid pure-engine fixture states.
  * The ordered restore slots are an explicit contract; the capture test checks consumption.
  */
-class FixtureRegistry(private val values: List<Any?>) : SaveableStateRegistry {
+sealed interface FixtureSlot {
+    val payload: Any?
+    fun restoredValue(): Any
+    fun savedPayload(value: Any?): Any?
+}
+
+data class FixtureMutableState(override val payload: Any?) : FixtureSlot {
+    override fun restoredValue(): Any = mutableStateOf(payload)
+    override fun savedPayload(value: Any?): Any? {
+        check(value is MutableState<*>) { "Expected MutableState saver output, found ${value?.javaClass?.simpleName ?: "null"}" }
+        return value.value
+    }
+}
+
+data class FixtureMutableIntState(override val payload: Int) : FixtureSlot {
+    override fun restoredValue(): Any = mutableIntStateOf(payload)
+    override fun savedPayload(value: Any?): Any? {
+        check(value is MutableIntState) { "Expected MutableIntState saver output, found ${value?.javaClass?.simpleName ?: "null"}" }
+        return value.intValue
+    }
+}
+
+data class FixtureMutableLongState(override val payload: Long) : FixtureSlot {
+    override fun restoredValue(): Any = mutableLongStateOf(payload)
+    override fun savedPayload(value: Any?): Any? {
+        check(value is MutableLongState) { "Expected MutableLongState saver output, found ${value?.javaClass?.simpleName ?: "null"}" }
+        return value.longValue
+    }
+}
+
+class FixtureRegistry(private val values: List<FixtureSlot>) : SaveableStateRegistry {
     private val delegate = SaveableStateRegistry(null) { true }
-    private val restored = linkedMapOf<String, Any?>()
+    private val restored = linkedMapOf<String, FixtureSlot>()
     var consumed = 0
         private set
     override fun consumeRestored(key: String): Any? {
         if (consumed >= values.size) return null
-        val value = values[consumed++]
-        // rememberSaveable applies the production state saver after this call. Android's
-        // SaveableStateRegistry supplies raw payloads here; do not pre-wrap primitives in
-        // MutableState, or the production saver receives the wrong type.
-        restored[key] = value
-        return value
+        val slot = values[consumed++]
+        restored[key] = slot
+        return slot.restoredValue()
     }
     override fun registerProvider(key: String, valueProvider: () -> Any?): SaveableStateRegistry.Entry = delegate.registerProvider(key, valueProvider)
     override fun canBeSaved(value: Any) = true
@@ -56,10 +83,10 @@ class FixtureRegistry(private val values: List<Any?>) : SaveableStateRegistry {
     fun assertConsumed() {
         check(consumed == values.size) { "Saved-state fixture contract changed" }
         val saved = performSave()
-        restored.forEach { (key, expected) ->
-            val actual = saved[key]?.firstOrNull()
+        restored.forEach { (key, slot) ->
+            val actual = slot.savedPayload(saved[key]?.firstOrNull())
             // Story restoration intentionally increments its narration identity.
-            check(FixtureEquivalence.matches(expected, actual)) {
+            check(FixtureEquivalence.matches(slot.payload, actual)) {
                 "Restored fixture did not survive its production saver: $key"
             }
         }
@@ -80,6 +107,10 @@ object FixtureEquivalence {
 class CaptureFixture(val registry: FixtureRegistry, val content: @Composable () -> Unit)
 
 object CaptureFixtures {
+    private fun state(value: Any?) = FixtureMutableState(value)
+    private fun intState(value: Int) = FixtureMutableIntState(value)
+    private fun longState(value: Long) = FixtureMutableLongState(value)
+
     private fun saved(screen: String, field: String, state: Any): Any {
         val owner = Class.forName("com.nahtygal.olivialooi.ui.games.$screen")
         val member = owner.getDeclaredField(field).apply { isAccessible = true }
@@ -91,17 +122,17 @@ object CaptureFixtures {
     }
     fun create(id: String): CaptureFixture {
         val seed = Random(26)
-        var values: List<Any?> = emptyList()
+        var values: List<FixtureSlot> = emptyList()
         val content: @Composable () -> Unit
         when {
             id.startsWith("home_") && id != "home_story_entry" -> content = { LooLooApp() }
-            id.startsWith("games_main") -> { values = listOf("Games"); content = { LooLooApp() } }
+            id.startsWith("games_main") -> { values = listOf(state("Games")); content = { LooLooApp() } }
             id == "apps_main" -> content = { AppsScreen({ false }, {}) }
             id == "settings_main" -> content = { LooLooApp() }
             id.startsWith("memory_match_") -> {
                 var s = MemoryMatchEngine.newGame(MemoryGameSize.Little, seed)
                 if (id.endsWith("in_progress")) s = MemoryMatchEngine.selectCard(s,0)
-                values = listOf(saved("memory.MemoryMatchGameScreenKt","MemoryMatchStateSaver",s))
+                values = listOf(state(saved("memory.MemoryMatchGameScreenKt","MemoryMatchStateSaver",s)))
                 content = { MemoryMatchGameScreen(MemoryGameSize.Little,{}, {}) }
             }
             id == "coloring_main" -> content = { ColoringPictureScreen({}, {}) }
@@ -109,12 +140,12 @@ object CaptureFixtures {
                 if (id.endsWith("main")) content = { SpeakAndSpellLevelScreen({}, {}) }
                 else {
                     val s = SpeakAndSpellEngine.newGame(SpellingLevel.entries.first(),seed)
-                    values = listOf(saved("spelling.SpeakAndSpellGameScreenKt","SpeakAndSpellStateSaver",s))
+                    values = listOf(state(saved("spelling.SpeakAndSpellGameScreenKt","SpeakAndSpellStateSaver",s)))
                     content = { SpeakAndSpellGameScreen(SpellingLevel.entries.first(),{}, {}) }
                 }
             }
             id.startsWith("animal_sounds_") -> {
-                if(id.endsWith("selected")) values = listOf("cow",0,true)
+                if(id.endsWith("selected")) values = listOf(state("cow"),intState(0),state(true))
                 content = { AnimalSoundsScreen({}) }
             }
             id.startsWith("count_") -> {
@@ -123,7 +154,7 @@ object CaptureFixtures {
                     var s = CountingEngine.newGame(CountingLevel.entries.first(),seed)
                     while (s.targetCount < 2) s = CountingEngine.newGame(CountingLevel.entries.first(),seed)
                     s = CountingEngine.selectObject(s,s.displayedObjects.first().id)
-                    values = listOf(saved("counting.CountingGameScreenKt","CountingStateSaver",s))
+                    values = listOf(state(saved("counting.CountingGameScreenKt","CountingStateSaver",s)))
                     content = { CountingGameScreen(CountingLevel.entries.first(),{}, {}) }
                 }
             }
@@ -136,7 +167,7 @@ object CaptureFixtures {
                         repeat(5) { s = MathEngine.selectAnswer(s,s.currentProblem.correctAnswer); s=MathEngine.finishEvaluation(s,s.attemptIdentity); if(!s.sessionComplete) s=MathEngine.nextProblem(s,seed) }
                         check(s.sessionComplete)
                     }
-                    values = listOf(saved("math.MathGameScreenKt","MathStateSaver",s))
+                    values = listOf(state(saved("math.MathGameScreenKt","MathStateSaver",s)))
                     content = { MathGameScreen(level,26,{}, {}) }
                 }
             }
@@ -149,7 +180,7 @@ object CaptureFixtures {
                         repeat(5) { s=AbcEngine.selectChoice(s,s.currentTarget.stableId); s=AbcEngine.finishEvaluation(s,s.attemptIdentity); if(!s.sessionComplete) s=AbcEngine.nextRound(s,seed) }
                         check(s.sessionComplete)
                     }
-                    values=listOf(saved("abc.AbcActivityScreenKt","AbcStateSaver",s))
+                    values=listOf(state(saved("abc.AbcActivityScreenKt","AbcStateSaver",s)))
                     content={ AbcActivityScreen(mode,26,{}, {}) }
                 }
             }
@@ -162,7 +193,7 @@ object CaptureFixtures {
                         repeat(5) { s=ShapesEngine.selectChoice(s,s.currentTarget.stableId,s.attemptIdentity); s=ShapesEngine.finishEvaluation(s,s.attemptIdentity); if(!s.sessionComplete) s=ShapesEngine.nextRound(s,seed) }
                         check(s.sessionComplete)
                     }
-                    values=listOf(ShapesStateCodec.encode(s).also { check(ShapesStateCodec.decode(it) != null) })
+                    values=listOf(state(ShapesStateCodec.encode(s).also { check(ShapesStateCodec.decode(it) != null) }))
                     content={ ShapesActivityScreen(mode,26,{}, {}) }
                 }
             }
@@ -176,7 +207,7 @@ object CaptureFixtures {
                     val placed=if(id.endsWith("completion")) s.totalPieceCount else if(id.endsWith("progress")) 2 else 0
                     s=s.copy(pieces=s.pieces.mapIndexed { i,p -> p.copy(isPlaced=i<placed) }, trayOrder=s.trayOrder.filter { it>=placed })
                     s=PuzzleEngine.acknowledgeMilestones(s)
-                    values=listOf(PuzzleStateCodec.encode(s).also { check(PuzzleStateCodec.decode(it) != null) })
+                    values=listOf(state(PuzzleStateCodec.encode(s).also { check(PuzzleStateCodec.decode(it) != null) }))
                     content={ PuzzleBoardScreen(picture,difficulty,26,{}, {}, {}) }
                 }
             }
@@ -187,7 +218,7 @@ object CaptureFixtures {
                     if(id.endsWith("complete")) s.song!!.notes.forEach { s=PianoEngine.press(s,it) }
                     s=s.copy(completionSpoken=s.isComplete)
                 }
-                values=listOf(PianoStateCodec.encode(s).also { check(PianoStateCodec.decode(it) != null) }); content={ PianoScreen({}) }
+                values=listOf(state(PianoStateCodec.encode(s).also { check(PianoStateCodec.decode(it) != null) })); content={ PianoScreen({}) }
             }
             id.startsWith("drums_") -> {
                 var s=DrumState()
@@ -197,7 +228,7 @@ object CaptureFixtures {
                         repeat(5) { s=DrumEngine.finishReplay(s,s.replayIdentity); s.pattern.forEach { s=DrumEngine.hit(s,it) }; if(!s.sessionComplete) s=DrumEngine.nextBeat(s,seed) }
                     } else if(id.endsWith("your_turn")) s=DrumEngine.finishReplay(s,s.replayIdentity)
                 }
-                values=listOf(DrumStateCodec.encode(s).also { check(DrumStateCodec.decode(it) != null) },true); content={ DrumScreen({}) }
+                values=listOf(state(DrumStateCodec.encode(s).also { check(DrumStateCodec.decode(it) != null) }),state(true)); content={ DrumScreen({}) }
             }
             id.startsWith("billiards_") -> {
                 if(id.endsWith("picker")) content={ BilliardsModeScreen({}, {}) }
@@ -205,12 +236,12 @@ object CaptureFixtures {
                     val mode=when { "versus" in id -> BilliardsMode.VERSUS; "try_pocket" in id -> BilliardsMode.TRY_POCKET; else -> BilliardsMode.FREE_PLAY }
                     var s=BilliardsEngine.newGame(mode,seed)
                     if(id.endsWith("looloo_turn")) s=BilliardsEngine.prepareAi(s.copy(turn=TurnOwner.LOOLOO),s.turnIdentity,seed)
-                    values=listOf(BilliardsStateCodec.encode(s).also { check(BilliardsStateCodec.decode(it) != null) },s.turnIdentity)
+                    values=listOf(state(BilliardsStateCodec.encode(s).also { check(BilliardsStateCodec.decode(it) != null) }),longState(s.turnIdentity))
                     content={ BilliardsTableScreen(mode,26,{}, {}, {}) }
                 }
             }
             id.startsWith("story_") || id=="home_story_entry" -> {
-                if(id=="story_library" || id=="home_story_entry") values=listOf(true)
+                if(id=="story_library" || id=="home_story_entry") values=listOf(state(true))
                 else {
                     val index=when(id) { "story_eliana_duck_page" -> 1; "story_rainbow_page" -> 2; "story_sleepy_puppy_page" -> 3; "story_little_star_page" -> 4; else -> 0 }
                     var s=StoryEngine.open(StoryCatalog.stories[index].id)
@@ -219,7 +250,7 @@ object CaptureFixtures {
                         if(id.endsWith("_page")) repeat(3) { s=StoryEngine.next(s) }
                         if(id=="story_completion") repeat(6) { s=StoryEngine.next(s) }
                     }
-                    values=listOf(false,StoryEngine.encode(s))
+                    values=listOf(state(false),state(StoryEngine.encode(s)))
                 }
                 content={ StoryTimeScreen({}) }
             }
@@ -227,7 +258,7 @@ object CaptureFixtures {
                 var s=TicTacToeEngine.newGame()
                 val moves=if(id.endsWith("completion")) listOf(0,3,1,4,2) else if(id.endsWith("in_progress")) listOf(0,4,2) else emptyList()
                 moves.forEach { s=TicTacToeEngine.playMove(s,it) }
-                values=listOf(TicTacToeDifficulty.Easy.name,saved("tictactoe.TicTacToeGameScreenKt","TicTacToeStateSaver",s))
+                values=listOf(state(TicTacToeDifficulty.Easy.name),state(saved("tictactoe.TicTacToeGameScreenKt","TicTacToeStateSaver",s)))
                 content={ TicTacToeGameScreen(TicTacToeGameMode.PersonVsPerson,{}, {}) }
             }
             else -> error("No fixture for $id")
