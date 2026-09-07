@@ -137,7 +137,9 @@ def cleanup_device(command):
     errors = []
     for parts in (('shell', 'am', 'force-stop', PACKAGE),
                   ('shell', 'am', 'force-stop', PACKAGE + '.test'),
-                  ('shell', 'input', 'keyevent', 'KEYCODE_HOME')):
+                  ('shell', 'input', 'keyevent', 'KEYCODE_HOME'),
+                  ('shell', 'am', 'start', '-a', 'android.intent.action.MAIN',
+                   '-c', 'android.intent.category.HOME')):
         try:
             command(*parts)
         except (OSError, subprocess.SubprocessError) as error:
@@ -197,18 +199,25 @@ def capture_batch(rows, metadata, profile, output, command, instrument, utilitie
                 if not isinstance(reported, dict) or reported.get('status') not in ('captured', 'failed', 'skipped'):
                     raise ValueError('Malformed fixture status')
                 record.update(reported)
-            if crashed or reported is None:
+            # A failing test still writes the fixture record before its final JUnit
+            # assertion. Prefer that record: the assertion is only the process-level
+            # summary and must not mask the underlying Android fixture exception.
+            if reported is None:
                 match = re.search(r'\b([A-Za-z][A-Za-z0-9]{0,90}(?:Exception|Error))\b', log)
                 kind = match.group(1) if match else ('InstrumentationCrash' if crashed else 'MissingFixtureResult')
                 message = sanitize_public(log.splitlines()[-1] if log.splitlines() else kind)
                 record.update(status='failed', error_type=kind, original_error_type=kind,
-                              original_error_message=message, capture_stage='instrumentation',
+                              error_message=message, original_error_message=message, capture_stage='instrumentation',
+                              log_file=f'logs/{screen_id}.log',
                               detail_log=f'logs/{screen_id}.log',
                               notes=f'{screen_id}: {kind}; inspect the private local detail log')
             if record.get('status') == 'failed':
                 record.setdefault('capture_stage', 'instrumentation_result')
                 record.setdefault('original_error_type', record.get('error_type', 'InstrumentationReportedFailure'))
                 record.setdefault('original_error_message', sanitize_public(record.get('notes', 'Fixture reported failure')))
+                record.setdefault('error_type', record.get('original_error_type'))
+                record.setdefault('error_message', record.get('original_error_message'))
+                record.setdefault('log_file', f'logs/{screen_id}.log')
                 record.setdefault('detail_log', f'logs/{screen_id}.log')
             if record['status'] == 'captured':
                 data = command('exec-out', 'run-as', PACKAGE, 'cat',
@@ -225,7 +234,8 @@ def capture_batch(rows, metadata, profile, output, command, instrument, utilitie
             # Full details remain local; no raw paths, keys, or infrastructure enter the manifest.
             kind = type(error).__name__
             record.update(status='failed', error_type=kind, original_error_type=kind,
-                          original_error_message=sanitize_public(str(error)), capture_stage='host_validation',
+                          error_message=sanitize_public(str(error)), original_error_message=sanitize_public(str(error)), capture_stage='host_validation',
+                          log_file=f'logs/{screen_id}.log',
                           detail_log=f'logs/{screen_id}.log',
                           notes=f'{screen_id}: {kind}; inspect the private local detail log')
             detail = str(error)

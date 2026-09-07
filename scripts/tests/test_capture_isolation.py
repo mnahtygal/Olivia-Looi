@@ -28,6 +28,8 @@ class Transport:
             raise KeyboardInterrupt
         if outcome == 'timeout':
             raise subprocess.TimeoutExpired('instrument', 120)
+        if outcome == 'reported_failure':
+            return subprocess.CompletedProcess([], 1, 'INSTRUMENTATION_RESULT: shortMsg=Process crashed.\njava.lang.AssertionError', '')
         return subprocess.CompletedProcess([], 0, 'INSTRUMENTATION_RESULT: shortMsg=Process crashed.\njava.lang.ClassCastException' if outcome == 'crash' else 'OK (1 test)', '')
 
     def command(self, *parts, binary=False):
@@ -44,6 +46,17 @@ class Transport:
                 return '{'
             if outcome == 'wrong_id':
                 return json.dumps({'other_fixture': {'status': 'captured'}})
+            if outcome == 'reported_failure':
+                return json.dumps({self.current: {
+                    'status': 'failed',
+                    'capture_stage': 'restoration_validation',
+                    'error_type': 'IllegalStateException',
+                    'error_message': 'Restored fixture did not survive its production saver: key',
+                    'original_error_type': 'IllegalStateException',
+                    'original_error_message': 'Restored fixture did not survive its production saver: key',
+                    'detail_log': f'logs/{self.current}.log',
+                    'notes': 'fixture failed during restoration validation',
+                }})
             return json.dumps({self.current: {'status': 'failed' if outcome == 'failed' else 'captured', 'notes': 'Test transport result'}})
         return b'invalid' if outcome == 'bad_png' else b'\x89PNG\r\n\x1a\nTEST_TRANSPORT_ONLY'
 
@@ -89,6 +102,14 @@ class IsolationTests(unittest.TestCase):
         self.assertFalse((self.output / entries[1]['filename']).exists())
         self.assertEqual(2, len(list(self.output.rglob('*.png'))))
 
+    def test_reported_fixture_error_survives_failing_junit_process(self):
+        entries = self.execute(Transport({self.rows[1]['id']: 'reported_failure'}))
+        failure = entries[1]
+        self.assertEqual('failed', failure['status'])
+        self.assertEqual('restoration_validation', failure['capture_stage'])
+        self.assertEqual('IllegalStateException', failure['error_type'])
+        self.assertIn('production saver', failure['error_message'])
+
     def test_timeout_continues_and_cleanup_runs(self):
         transport = Transport({self.rows[1]['id']: 'timeout'})
         entries = self.execute(transport)
@@ -97,6 +118,8 @@ class IsolationTests(unittest.TestCase):
         self.assertEqual(3, transport.commands.count(('shell', 'am', 'force-stop', capture.PACKAGE)))
         self.assertEqual(3, transport.commands.count(('shell', 'am', 'force-stop', capture.PACKAGE + '.test')))
         self.assertEqual(3, transport.commands.count(('shell', 'input', 'keyevent', 'KEYCODE_HOME')))
+        self.assertEqual(3, transport.commands.count(('shell', 'am', 'start', '-a', 'android.intent.action.MAIN',
+                                                      '-c', 'android.intent.category.HOME')))
 
     def test_interrupt_preserves_partial_manifest_and_cleans_up(self):
         transport = Transport({self.rows[1]['id']: 'interrupted'})
@@ -106,7 +129,8 @@ class IsolationTests(unittest.TestCase):
         self.assertEqual(['captured', 'failed', 'blocked'], [r['status'] for r in entries])
         self.assertEqual('Interrupted', entries[1]['error_type'])
         self.assertTrue((self.output / entries[0]['filename']).exists())
-        self.assertEqual(('shell', 'input', 'keyevent', 'KEYCODE_HOME'), transport.commands[-1])
+        self.assertEqual(('shell', 'am', 'start', '-a', 'android.intent.action.MAIN',
+                          '-c', 'android.intent.category.HOME'), transport.commands[-1])
 
     def test_cleanup_failure_is_reported_and_does_not_mask_capture(self):
         transport = Transport({})

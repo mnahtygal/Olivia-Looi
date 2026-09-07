@@ -92,15 +92,44 @@ class ShowcaseCaptureTest {
         assertNull(CaptureFixtures.create("animal_sounds_main").registry.consumeRestored("unused"))
         repeat(2) {
             val registry = CaptureFixtures.create("animal_sounds_selected").registry
-            assertEquals("cow", (registry.consumeRestored("animal") as State<*>).value)
+            assertEquals("cow", registry.consumeRestored("animal"))
             val version = registry.consumeRestored("feedback")
-            assertTrue(version is MutableIntState)
-            assertEquals(0, (version as MutableIntState).intValue)
-            assertEquals(true, (registry.consumeRestored("showWord") as State<*>).value)
+            assertEquals(0, version)
+            assertEquals(true, registry.consumeRestored("showWord"))
         }
         val billiards = CaptureFixtures.create("billiards_free_play_rack").registry
         billiards.consumeRestored("table")
-        assertTrue(billiards.consumeRestored("spokenIdentity") is MutableLongState)
+        assertTrue(billiards.consumeRestored("spokenIdentity") is Long)
+    }
+
+    @Test fun productionRestorationContracts() {
+        val inventory=JSONArray(instrumentation.context.assets.open("looloo_screenshots.json").bufferedReader().use { it.readText() })
+        var current by mutableStateOf<Pair<String,CaptureFixture>?>(null)
+        compose.mainClock.autoAdvance=false
+        compose.setContent {
+            current?.let { (id,fixture) -> key(id) {
+                CompositionLocalProvider(LocalSaveableStateRegistry provides fixture.registry) {
+                    OliviaLooiTheme { Box(Modifier.fillMaxSize().testTag("restoration-ready")) { fixture.content() } }
+                }
+            } }
+        }
+        // This is the same registry/composable path used by captureInventory. Keep the
+        // home_story_entry case explicit because it caught the Android-only regression.
+        val ids = buildList {
+            add("home_story_entry")
+            for (index in 0 until inventory.length()) {
+                val id=inventory.getJSONObject(index).getString("id")
+                if (id != "home_story_entry") add(id)
+            }
+        }
+        for (id in ids) {
+            val fixture=CaptureFixtures.create(id)
+            compose.runOnIdle { current=null }
+            compose.mainClock.advanceTimeByFrame()
+            compose.runOnIdle { current=id to fixture }
+            compose.waitUntil(10_000) { compose.onAllNodesWithTag("restoration-ready").fetchSemanticsNodes().size==1 }
+            compose.runOnIdle { fixture.registry.assertConsumed() }
+        }
     }
 
     @Test fun captureInventory() {
@@ -187,8 +216,11 @@ class ShowcaseCaptureTest {
                 logFile.writeText("screen_id=$id\ncapture_stage=$captureStage\n\n${detail(error)}")
                 record.put("status","failed")
                     .put("capture_stage",captureStage)
+                    .put("error_type",error.javaClass.simpleName)
+                    .put("error_message",sanitized(error.message))
                     .put("original_error_type",error.javaClass.simpleName)
                     .put("original_error_message",sanitized(error.message))
+                    .put("log_file","logs/$id.log")
                     .put("detail_log","logs/$id.log")
                     .put("notes","$id failed during $captureStage; see the private local detail log")
             } finally {
@@ -197,7 +229,7 @@ class ShowcaseCaptureTest {
             }
         }
         try {
-            instrumentation.runOnMainSync { current=null; compose.activity.finish() }
+            instrumentation.runOnMainSync { current=null; compose.activity.finishAndRemoveTask() }
         } catch (_: Exception) {
             // Host-side force-stop is the fallback when the Compose owner is already broken.
         }
