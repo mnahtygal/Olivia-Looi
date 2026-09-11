@@ -38,7 +38,7 @@ android {
         minSdk = 26
         targetSdk = 37
         versionCode = 1
-        versionName = "1.0"
+        versionName = "v0.27"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "JARVIS_BASE_URL", jarvisBaseUrl.asBuildConfigString())

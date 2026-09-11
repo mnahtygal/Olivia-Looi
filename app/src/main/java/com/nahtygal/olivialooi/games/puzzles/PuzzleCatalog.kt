@@ -17,7 +17,10 @@ object PuzzleCatalog {
 enum class PuzzleDifficulty(val columns: Int, val rows: Int, val displayName: String) {
     EASY(2, 3, "Easy"),
     MEDIUM(3, 3, "Medium"),
-    HARD(3, 4, "Hard");
+    HARD(3, 4, "Hard"),
+    BIG(4, 4, "Big"),
+    GIANT(4, 5, "Giant"),
+    SUPER(5, 5, "Super");
 
     val pieceCount: Int get() = rows * columns
 }

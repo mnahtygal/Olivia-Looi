@@ -35,8 +35,8 @@ def inventory():
     for key in ('id', 'filename'):
         if len({r[key] for r in rows}) != len(rows):
             raise ValueError(f'Duplicate inventory {key}')
-    if len(rows) != 65 or any(not r['title'].strip() for r in rows):
-        raise ValueError('Expected 65 titled inventory entries')
+    if len(rows) != 70 or any(not r['title'].strip() for r in rows):
+        raise ValueError('Expected 70 titled inventory entries')
     return rows
 
 

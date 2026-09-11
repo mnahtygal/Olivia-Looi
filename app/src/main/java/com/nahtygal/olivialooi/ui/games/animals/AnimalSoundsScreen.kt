@@ -51,6 +51,9 @@ import com.nahtygal.olivialooi.games.animals.AnimalId
 import com.nahtygal.olivialooi.games.animals.AnimalSound
 import com.nahtygal.olivialooi.games.animals.AnimalSoundPlaybackSequence
 import com.nahtygal.olivialooi.games.animals.AnimalSoundsCatalog
+import com.nahtygal.olivialooi.games.animals.AnimalPlayMode
+import com.nahtygal.olivialooi.games.animals.AnimalQuizEngine
+import kotlin.random.Random
 import com.nahtygal.olivialooi.speech.AndroidTextToSpeech
 import com.nahtygal.olivialooi.ui.games.WinterGamesBackground
 import com.nahtygal.olivialooi.ui.games.WinterNavigationButton
@@ -69,7 +72,13 @@ fun AnimalSoundsScreen(
     var selectedAnimalId by rememberSaveable { mutableStateOf<String?>(null) }
     var feedbackVersion by rememberSaveable { mutableIntStateOf(0) }
     var showSoundWord by rememberSaveable { mutableStateOf(false) }
+    var modeName by rememberSaveable { mutableStateOf(AnimalPlayMode.FREE_PLAY.name) }
+    var quizTargetName by rememberSaveable { mutableStateOf(AnimalSoundsCatalog.animals.first().id.name) }
+    var quizRound by rememberSaveable { mutableIntStateOf(0) }
+    var quizCorrect by rememberSaveable { mutableStateOf<Boolean?>(null) }
     val selectedAnimal = selectedAnimalId?.let(AnimalSoundsCatalog::findById)
+    val mode = enumValueOf<AnimalPlayMode>(modeName)
+    val quizState = AnimalQuizEngine.newRound(mode, enumValueOf<AnimalId>(quizTargetName), Random(700 + quizRound))
 
     DisposableEffect(textToSpeech, animalAudioPlayer, playbackSequence) {
         onDispose {
@@ -111,6 +120,13 @@ fun AnimalSoundsScreen(
                     fontWeight = FontWeight.ExtraBold,
                     textAlign = TextAlign.Center,
                 )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.widthIn(max = 920.dp).fillMaxWidth()) {
+                    listOf(AnimalPlayMode.FREE_PLAY to "Free Play", AnimalPlayMode.WHO_MAKES_THIS_SOUND to "Who Makes This Sound?", AnimalPlayMode.FIND_THE_ANIMAL to "Find the Animal").forEach { (choice, label) ->
+                        Card(onClick = { modeName = choice.name; quizCorrect = null }, modifier = Modifier.weight(1f), colors = CardDefaults.cardColors(containerColor = if (mode == choice) Color(0xFFFFE8A8) else SnowWhite), shape = RoundedCornerShape(18.dp)) {
+                            Text(label, modifier = Modifier.padding(horizontal = 8.dp, vertical = 12.dp).fillMaxWidth(), color = DeepIndigo, fontSize = if (tabletLayout) 18.sp else 14.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+                        }
+                    }
+                }
                 Text(
                     text = stringResource(R.string.animal_sounds_prompt),
                     color = SnowWhite.copy(alpha = 0.92f),
@@ -138,7 +154,34 @@ fun AnimalSoundsScreen(
                     }
                 }
 
-                Column(
+                if (mode != AnimalPlayMode.FREE_PLAY) {
+                    val target = AnimalSoundsCatalog.findById(quizState.target.stableId)!!
+                    Text(if (mode == AnimalPlayMode.WHO_MAKES_THIS_SOUND) "Listen! Who makes this sound?" else "Find the ${target.displayName}!", color = SnowWhite, fontSize = if (tabletLayout) 25.sp else 20.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+                    if (mode == AnimalPlayMode.WHO_MAKES_THIS_SOUND) {
+                        Card(onClick = { animalAudioPlayer.stop(); textToSpeech.stop(); textToSpeech.speak(target.spokenPhrase) { animalAudioPlayer.play(target.localAudioAssetName) } }, colors = CardDefaults.cardColors(containerColor = SnowWhite), shape = RoundedCornerShape(22.dp)) {
+                            Text("🔊  Play the sound", modifier = Modifier.padding(horizontal = 28.dp, vertical = 14.dp), color = DeepIndigo, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                    quizCorrect?.let { correct -> Text(if (correct) "Yes! Great listening!" else "Good try! Let’s try another one.", color = SnowWhite, fontSize = 22.sp, fontWeight = FontWeight.Bold) }
+                    Column(modifier = Modifier.fillMaxWidth().widthIn(max = 920.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        quizState.choices.chunked(columns).forEach { row ->
+                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(if (tabletLayout) 18.dp else 10.dp)) {
+                                row.forEach { id ->
+                                    val animal = AnimalSoundsCatalog.findById(id.stableId)!!
+                                    AnimalTile(animal, tabletLayout, false, 0, onClick = {
+                                        val result = AnimalQuizEngine.answer(quizState, id)
+                                        quizCorrect = result.lastAnswerCorrect
+                                        if (result.lastAnswerCorrect == true) {
+                                            quizRound += 1
+                                            quizTargetName = AnimalSoundsCatalog.animals[quizRound % AnimalSoundsCatalog.animals.size].id.name
+                                        }
+                                    }, modifier = Modifier.weight(1f))
+                                }
+                                repeat(columns - row.size) { Spacer(Modifier.weight(1f)) }
+                            }
+                        }
+                    }
+                } else Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .widthIn(max = 920.dp),

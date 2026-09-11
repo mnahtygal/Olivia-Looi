@@ -19,8 +19,8 @@ class PuzzleCatalogTest {
     @Test fun `unknown lookup safe`() {
         listOf("", "missing", "BUTTERFLY").forEach { assertNull(PuzzleCatalog.findById(it)) }
     }
-    @Test fun `exactly three difficulties`() {
-        assertEquals(listOf("EASY", "MEDIUM", "HARD"), PuzzleDifficulty.entries.map { it.name })
+    @Test fun `six child friendly difficulties`() {
+        assertEquals(listOf("EASY", "MEDIUM", "HARD", "BIG", "GIANT", "SUPER"), PuzzleDifficulty.entries.map { it.name })
     }
     @Test fun `easy six in two by three grid`() {
         assertEquals(6, PuzzleDifficulty.EASY.pieceCount)
@@ -36,6 +36,10 @@ class PuzzleCatalogTest {
         assertEquals(12, PuzzleDifficulty.HARD.pieceCount)
         assertEquals(3, PuzzleDifficulty.HARD.columns)
         assertEquals(4, PuzzleDifficulty.HARD.rows)
+    }
+    @Test fun `larger grids expose sixteen twenty and twenty five pieces`() {
+        assertEquals(listOf(16, 20, 25), PuzzleDifficulty.entries.drop(3).map { it.pieceCount })
+        assertEquals(listOf("4x4", "4x5", "5x5"), PuzzleDifficulty.entries.drop(3).map { "${it.columns}x${it.rows}" })
     }
     @Test fun `counts match grid dimensions`() {
         PuzzleDifficulty.entries.forEach { assertEquals(it.rows * it.columns, it.pieceCount) }

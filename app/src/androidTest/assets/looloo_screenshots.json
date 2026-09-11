@@ -567,8 +567,53 @@
     "public_default": true
   },
   {
+    "id": "puzzle_big_progress",
+    "filename": "64_puzzle_big_progress.png",
+    "title": "Puzzle Big In Progress",
+    "category": "games",
+    "notes": "v0.27 expanded puzzle grid.",
+    "duration_seconds": 4,
+    "public_default": true
+  },
+  {
+    "id": "story_expanded_library",
+    "filename": "65_story_expanded_library.png",
+    "title": "Expanded Story Library",
+    "category": "stories",
+    "notes": "v0.27 fifteen-story library.",
+    "duration_seconds": 4,
+    "public_default": true
+  },
+  {
+    "id": "story_new_barnyard_page",
+    "filename": "66_story_new_barnyard_page.png",
+    "title": "New Barnyard Story",
+    "category": "stories",
+    "notes": "v0.27 representative new story.",
+    "duration_seconds": 4,
+    "public_default": true
+  },
+  {
+    "id": "animal_sounds_who_sound",
+    "filename": "67_animal_sounds_who_sound.png",
+    "title": "Who Makes This Sound",
+    "category": "learn",
+    "notes": "v0.27 animal sound quiz.",
+    "duration_seconds": 4,
+    "public_default": true
+  },
+  {
+    "id": "animal_sounds_find_animal",
+    "filename": "68_animal_sounds_find_animal.png",
+    "title": "Find the Animal",
+    "category": "learn",
+    "notes": "v0.27 animal name quiz.",
+    "duration_seconds": 4,
+    "public_default": true
+  },
+  {
     "id": "apps_main",
-    "filename": "64_apps_main.png",
+    "filename": "69_apps_main.png",
     "title": "Apps Main",
     "category": "home",
     "notes": "Production screen; seeded saved-state fixture where supported.",
@@ -577,7 +622,7 @@
   },
   {
     "id": "settings_main",
-    "filename": "65_settings_main.png",
+    "filename": "70_settings_main.png",
     "title": "Settings Main",
     "category": "home",
     "notes": "Production screen; seeded saved-state fixture where supported.",

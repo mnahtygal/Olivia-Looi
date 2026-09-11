@@ -181,7 +181,9 @@ object CaptureFixtures {
                 }
             }
             id.startsWith("animal_sounds_") -> {
-                if(id.endsWith("selected")) values = listOf(state("cow"),intState(0),state(true))
+                if(id.endsWith("selected")) values = listOf(state("cow"),intState(0),state(true),state(AnimalPlayMode.FREE_PLAY.name),state(AnimalId.Cow.name),intState(0),state(null))
+                if(id.endsWith("who_sound")) values = listOf(state(null),intState(0),state(false),state(AnimalPlayMode.WHO_MAKES_THIS_SOUND.name),state(AnimalId.Cow.name),intState(0),state(null))
+                if(id.endsWith("find_animal")) values = listOf(state(null),intState(0),state(false),state(AnimalPlayMode.FIND_THE_ANIMAL.name),state(AnimalId.Cow.name),intState(0),state(null))
                 content = { AnimalSoundsScreen({}) }
             }
             id.startsWith("count_") -> {
@@ -238,7 +240,7 @@ object CaptureFixtures {
                 if(id=="puzzle_picture_picker") content={ PuzzlePictureScreen({}, {}) }
                 else if(id=="puzzle_piece_picker") content={ PuzzleDifficultyScreen(picture,{}, {}) }
                 else {
-                    val difficulty=when { "9_piece" in id -> PuzzleDifficulty.MEDIUM; "12_piece" in id -> PuzzleDifficulty.HARD; else -> PuzzleDifficulty.EASY }
+                    val difficulty=when { "16_piece" in id -> PuzzleDifficulty.BIG; "9_piece" in id -> PuzzleDifficulty.MEDIUM; "12_piece" in id -> PuzzleDifficulty.HARD; else -> PuzzleDifficulty.EASY }
                     var s=PuzzleEngine.newPuzzle(picture,difficulty,seed)
                     val placed=if(id.endsWith("completion")) s.totalPieceCount else if(id.endsWith("progress")) 2 else 0
                     s=s.copy(pieces=s.pieces.mapIndexed { i,p -> p.copy(isPlaced=i<placed) }, trayOrder=s.trayOrder.filter { it>=placed })
@@ -277,9 +279,9 @@ object CaptureFixtures {
                 }
             }
             id.startsWith("story_") || id=="home_story_entry" -> {
-                if(id=="story_library" || id=="home_story_entry") values=listOf(state(true))
+                if(id=="story_library" || id=="story_expanded_library" || id=="home_story_entry") values=listOf(state(true))
                 else {
-                    val index=when(id) { "story_eliana_duck_page" -> 1; "story_rainbow_page" -> 2; "story_sleepy_puppy_page" -> 3; "story_little_star_page" -> 4; else -> 0 }
+                    val index=when(id) { "story_eliana_duck_page" -> 1; "story_rainbow_page" -> 2; "story_sleepy_puppy_page" -> 3; "story_little_star_page" -> 4; "story_new_barnyard_page" -> 6; else -> 0 }
                     var s=StoryEngine.open(StoryCatalog.stories[index].id)
                     if(!id.startsWith("story_opening")) {
                         s=StoryEngine.chooseMode(s,if(id=="story_read_to_me") ReadingMode.TO_ME else ReadingMode.MYSELF)

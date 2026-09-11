@@ -12,14 +12,14 @@ spec.loader.exec_module(capture)
 
 
 class ScreenshotTests(unittest.TestCase):
-    def test_inventory_has_65_unique_ids(self):
+    def test_inventory_has_70_unique_ids(self):
         rows = capture.inventory()
-        self.assertEqual(65, len(rows))
-        self.assertEqual(65, len({r['id'] for r in rows}))
+        self.assertEqual(70, len(rows))
+        self.assertEqual(70, len({r['id'] for r in rows}))
 
     def test_unique_deterministic_filenames(self):
         rows = capture.inventory()
-        self.assertEqual(65, len({r['filename'] for r in rows}))
+        self.assertEqual(70, len({r['filename'] for r in rows}))
         for i, r in enumerate(rows, 1):
             self.assertEqual(f"{i:02d}_{r['id']}.png", r['filename'])
 
@@ -33,8 +33,8 @@ class ScreenshotTests(unittest.TestCase):
             self.assertTrue(rows)
             self.assertTrue(all(r['category'] == category for r in rows))
             selected.extend(r['id'] for r in rows)
-        self.assertEqual(65, len(set(selected)))
-        self.assertEqual(65, len(capture.select_entries('all')))
+        self.assertEqual(70, len(set(selected)))
+        self.assertEqual(70, len(capture.select_entries('all')))
 
     def test_unknown_category(self):
         with self.assertRaises(ValueError):
@@ -87,7 +87,7 @@ class ScreenshotTests(unittest.TestCase):
             output = Path(directory)
             capture.write_manifests(output, entries)
             self.assertEqual([f"tablet/{rows[0]['filename']}"], (output / 'showcase_order.txt').read_text().splitlines())
-            self.assertEqual(65, len(json.loads((output / 'manifest.json').read_text())['entries']))
+            self.assertEqual(70, len(json.loads((output / 'manifest.json').read_text())['entries']))
 
     def test_utilities_require_opt_in(self):
         self.assertEqual({'apps_main', 'settings_main'}, {r['id'] for r in capture.inventory() if not r['public_default']})
@@ -112,7 +112,7 @@ class ScreenshotTests(unittest.TestCase):
                     capture.main(['--output', directory])
             output = Path(directory)
             rows = json.loads((output / 'manifest.json').read_text())['entries']
-            self.assertEqual(65, len(rows))
+            self.assertEqual(70, len(rows))
             self.assertTrue(all(r['status'] == 'blocked' for r in rows))
             self.assertFalse(list(output.rglob('*.png')))
             self.assertEqual('', (output / 'showcase_order.txt').read_text())
