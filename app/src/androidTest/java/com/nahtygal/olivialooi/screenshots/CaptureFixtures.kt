@@ -11,6 +11,8 @@ import com.nahtygal.olivialooi.games.puzzles.*
 import com.nahtygal.olivialooi.games.memory.*
 import com.nahtygal.olivialooi.games.counting.*
 import com.nahtygal.olivialooi.games.spelling.*
+import com.nahtygal.olivialooi.games.animals.AnimalId
+import com.nahtygal.olivialooi.games.animals.AnimalPlayMode
 import com.nahtygal.olivialooi.games.tictactoe.*
 import com.nahtygal.olivialooi.games.billiards.*
 import com.nahtygal.olivialooi.stories.*
