@@ -33,6 +33,7 @@ import com.nahtygal.olivialooi.games.math.MathLevel
 import com.nahtygal.olivialooi.games.spelling.SpellingLevel
 import com.nahtygal.olivialooi.games.tictactoe.TicTacToeGameMode
 import com.nahtygal.olivialooi.profile.KidProfile
+import com.nahtygal.olivialooi.profile.KidProfileRepository
 import com.nahtygal.olivialooi.ui.apps.AppsScreen
 import com.nahtygal.olivialooi.ui.games.GamesScreen
 import com.nahtygal.olivialooi.ui.games.abc.AbcActivityScreen
@@ -53,9 +54,11 @@ import com.nahtygal.olivialooi.ui.games.tictactoe.TicTacToeModeScreen
 import com.nahtygal.olivialooi.ui.stories.StoryTimeScreen
 import com.nahtygal.olivialooi.ui.home.HomeActivity
 import com.nahtygal.olivialooi.ui.home.LooLooHomeScreen
+import com.nahtygal.olivialooi.ui.profile.ProfileChooserScreen
 
 private enum class LooLooScreen {
     Home,
+    ProfileChooser,
     Apps,
     Games,
     TicTacToeMode,
@@ -86,16 +89,30 @@ private enum class LooLooScreen {
 }
 
 @Composable
+internal fun LooLooApp(profileRepository: KidProfileRepository) {
+    val profileState = remember(profileRepository) {
+        ActiveKidProfileState(profileRepository)
+    }
+    LooLooApp(
+        activeKidProfile = profileState.activeProfile,
+        onProfileSelected = profileState::selectProfile,
+    )
+}
+
+@Composable
 internal fun LooLooApp(
     activeKidProfile: KidProfile = KidProfile.LEGACY_DEFAULT,
+    onProfileSelected: (KidProfile) -> Unit = {},
 ) {
     CompositionLocalProvider(LocalKidProfile provides activeKidProfile) {
-        LooLooAppContent()
+        LooLooAppContent(onProfileSelected = onProfileSelected)
     }
 }
 
 @Composable
-private fun LooLooAppContent() {
+private fun LooLooAppContent(
+    onProfileSelected: (KidProfile) -> Unit,
+) {
     val context = LocalContext.current
     val kidAppLauncher = remember(context) { KidAppLauncher(context) }
     var screenName by rememberSaveable { mutableStateOf(LooLooScreen.Home.name) }
@@ -168,6 +185,7 @@ private fun LooLooAppContent() {
                 LooLooScreen.Games -> LooLooScreen.Home
                 LooLooScreen.StoryTime -> LooLooScreen.Home
                 LooLooScreen.Apps -> LooLooScreen.Home
+                LooLooScreen.ProfileChooser -> LooLooScreen.Home
                 LooLooScreen.Home -> LooLooScreen.Home
             },
         )
@@ -178,6 +196,7 @@ private fun LooLooAppContent() {
             onGamesClick = { navigateTo(LooLooScreen.Games) },
             onAppsClick = { navigateTo(LooLooScreen.Apps) },
             onStoriesClick = { navigateTo(LooLooScreen.StoryTime) },
+            onSwitchPlayerClick = { navigateTo(LooLooScreen.ProfileChooser) },
             onActivityClick = { activity ->
                 navigateTo(when (activity) {
                     HomeActivity.PIANO -> LooLooScreen.Piano
@@ -190,6 +209,15 @@ private fun LooLooAppContent() {
                     HomeActivity.SPELLING -> LooLooScreen.SpeakAndSpellLevel
                 })
             },
+        )
+
+        LooLooScreen.ProfileChooser -> ProfileChooserScreen(
+            activeProfile = LocalKidProfile.current,
+            onProfileSelected = { profile ->
+                onProfileSelected(profile)
+                navigateTo(LooLooScreen.Home)
+            },
+            onBackToHome = { navigateTo(LooLooScreen.Home) },
         )
 
         LooLooScreen.StoryTime -> StoryTimeScreen(onHome = { navigateTo(LooLooScreen.Home) })

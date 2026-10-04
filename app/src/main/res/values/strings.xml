@@ -1,8 +1,11 @@
 <resources>
     <string name="app_name">LooLoo</string>
-    <string name="child_name_olivia">Olivia</string>
     <string name="looloo_name">LooLoo</string>
     <string name="looloo_subtitle">Olivia &amp; Eliana’s AI Companion</string>
+    <string name="profile_switch_player">Switch Player</string>
+    <string name="profile_chooser_title">Who\'s playing with LooLoo?</string>
+    <string name="profile_playing_now">Playing now</string>
+    <string name="profile_choose_content_description">Play as %1$s</string>
     <string name="looloo_greeting">Hi, %1$s!</string>
     <string name="looloo_listening_greeting">I\'m listening, %1$s!</string>
     <string name="looloo_ready">Ready</string>

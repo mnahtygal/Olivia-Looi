@@ -24,7 +24,7 @@ class MainActivity : ComponentActivity() {
         )
         setContent {
             OliviaLooiTheme {
-                LooLooApp(activeKidProfile = kidProfileRepository.selectedProfile)
+                LooLooApp(profileRepository = kidProfileRepository)
             }
         }
     }

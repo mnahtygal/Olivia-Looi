@@ -83,9 +83,11 @@ import com.nahtygal.olivialooi.R
 import com.nahtygal.olivialooi.brain.LooLooKidBrain
 import com.nahtygal.olivialooi.network.AndroidJarvisChatClient
 import com.nahtygal.olivialooi.network.JarvisChatResult
+import com.nahtygal.olivialooi.profile.KidProfile
 import com.nahtygal.olivialooi.speech.AndroidSpeechRecognizer
 import com.nahtygal.olivialooi.speech.AndroidTextToSpeech
 import com.nahtygal.olivialooi.speech.SpeechRecognitionFailure
+import com.nahtygal.olivialooi.ui.LocalKidProfile
 import com.nahtygal.olivialooi.ui.theme.AuroraPurple
 import com.nahtygal.olivialooi.ui.theme.DeepIndigo
 import com.nahtygal.olivialooi.ui.theme.FrostBlue
@@ -114,11 +116,13 @@ fun LooLooHomeScreen(
     onGamesClick: () -> Unit,
     onAppsClick: () -> Unit,
     onStoriesClick: () -> Unit,
+    onSwitchPlayerClick: () -> Unit,
     onActivityClick: (HomeActivity) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
+    val activeProfile = LocalKidProfile.current
     var speechState by remember { mutableStateOf(HomeSpeechState.Ready) }
     var microphoneAmplitude by remember { mutableFloatStateOf(0f) }
     var recognizedText by remember { mutableStateOf<String?>(null) }
@@ -131,7 +135,7 @@ fun LooLooHomeScreen(
     val textToSpeech = remember(context) {
         AndroidTextToSpeech(context.applicationContext)
     }
-    val kidBrain = remember { LooLooKidBrain() }
+    val kidBrain = remember(activeProfile) { LooLooKidBrain(activeProfile) }
 
     fun sendToJarvis(childMessage: String) {
         val prompt = kidBrain.buildPrompt(childMessage)
@@ -312,7 +316,9 @@ fun LooLooHomeScreen(
         onGamesClick = openGames,
         onAppsClick = openApps,
         onStoriesClick = { leaveHome(onStoriesClick) },
+        onSwitchPlayerClick = { leaveHome(onSwitchPlayerClick) },
         onActivityClick = { activity -> leaveHome { onActivityClick(activity) } },
+        activeProfile = activeProfile,
         modifier = modifier,
     )
 }
@@ -328,11 +334,13 @@ private fun LooLooHomeContent(
     onGamesClick: () -> Unit,
     onAppsClick: () -> Unit,
     onStoriesClick: () -> Unit,
+    onSwitchPlayerClick: () -> Unit,
     onActivityClick: (HomeActivity) -> Unit,
+    activeProfile: KidProfile,
     modifier: Modifier = Modifier,
 ) {
     var picker by rememberSaveable { mutableStateOf<HomeArtworkAction?>(null) }
-    val childName = stringResource(R.string.child_name_olivia)
+    val childName = activeProfile.displayName
     val isListening = speechState == HomeSpeechState.Starting ||
         speechState == HomeSpeechState.Listening ||
         speechState == HomeSpeechState.Processing
@@ -443,6 +451,14 @@ private fun LooLooHomeContent(
                 lineHeight = 22.sp,
                 textAlign = TextAlign.Center,
             )
+            Text(
+                text = stringResource(R.string.looloo_greeting, childName),
+                color = SnowWhite,
+                fontSize = 24.sp,
+                fontWeight = FontWeight.ExtraBold,
+                lineHeight = 30.sp,
+                textAlign = TextAlign.Center,
+            )
 
             Box(
                 modifier = Modifier
@@ -527,6 +543,8 @@ private fun LooLooHomeContent(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 AppsButton(onClick = onAppsClick)
+                Spacer(modifier = Modifier.width(6.dp))
+                SwitchPlayerButton(onClick = onSwitchPlayerClick)
                 Spacer(modifier = Modifier.width(6.dp))
                 SettingsButton(onClick = onSettingsClick)
             }
@@ -754,6 +772,26 @@ private fun AppsButton(onClick: () -> Unit) {
 }
 
 @Composable
+private fun SwitchPlayerButton(onClick: () -> Unit) {
+    Button(
+        onClick = onClick,
+        modifier = Modifier.heightIn(min = 52.dp),
+        shape = RoundedCornerShape(24.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = SnowWhite.copy(alpha = 0.92f),
+            contentColor = DeepIndigo,
+        ),
+        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
+    ) {
+        Text(
+            text = stringResource(R.string.profile_switch_player),
+            fontSize = 17.sp,
+            fontWeight = FontWeight.ExtraBold,
+        )
+    }
+}
+
+@Composable
 private fun AppsMiniIcon(modifier: Modifier = Modifier) {
     Canvas(modifier = modifier) {
         val squareSize = size.minDimension * 0.35f
@@ -842,7 +880,9 @@ private fun LooLooReadyPreview() {
             onGamesClick = {},
             onAppsClick = {},
             onStoriesClick = {},
+            onSwitchPlayerClick = {},
             onActivityClick = {},
+            activeProfile = KidProfile.OLIVIA,
         )
     }
 }
@@ -867,7 +907,9 @@ private fun LooLooListeningPreview() {
             onGamesClick = {},
             onAppsClick = {},
             onStoriesClick = {},
+            onSwitchPlayerClick = {},
             onActivityClick = {},
+            activeProfile = KidProfile.OLIVIA,
         )
     }
 }
