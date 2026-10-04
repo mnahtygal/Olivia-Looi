@@ -7,6 +7,7 @@ import com.nahtygal.olivialooi.ui.games.billiards.BilliardsModeScreen
 import com.nahtygal.olivialooi.ui.games.billiards.BilliardsTableScreen
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -31,6 +32,7 @@ import com.nahtygal.olivialooi.games.memory.MemoryGameSize
 import com.nahtygal.olivialooi.games.math.MathLevel
 import com.nahtygal.olivialooi.games.spelling.SpellingLevel
 import com.nahtygal.olivialooi.games.tictactoe.TicTacToeGameMode
+import com.nahtygal.olivialooi.profile.KidProfile
 import com.nahtygal.olivialooi.ui.apps.AppsScreen
 import com.nahtygal.olivialooi.ui.games.GamesScreen
 import com.nahtygal.olivialooi.ui.games.abc.AbcActivityScreen
@@ -84,7 +86,16 @@ private enum class LooLooScreen {
 }
 
 @Composable
-fun LooLooApp() {
+internal fun LooLooApp(
+    activeKidProfile: KidProfile = KidProfile.LEGACY_DEFAULT,
+) {
+    CompositionLocalProvider(LocalKidProfile provides activeKidProfile) {
+        LooLooAppContent()
+    }
+}
+
+@Composable
+private fun LooLooAppContent() {
     val context = LocalContext.current
     val kidAppLauncher = remember(context) { KidAppLauncher(context) }
     var screenName by rememberSaveable { mutableStateOf(LooLooScreen.Home.name) }

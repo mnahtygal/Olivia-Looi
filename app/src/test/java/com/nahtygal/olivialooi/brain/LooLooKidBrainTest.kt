@@ -1,5 +1,6 @@
 package com.nahtygal.olivialooi.brain
 
+import com.nahtygal.olivialooi.profile.KidProfile
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
@@ -23,6 +24,15 @@ class LooLooKidBrainTest {
 
         assertTrue(prompt.contains("young Olivia"))
         assertTrue(prompt.contains("Olivia:"))
+    }
+
+    @Test
+    fun promptCanUseElianaProfile() {
+        val prompt = LooLooKidBrain(KidProfile.ELIANA).buildPrompt("Tell me a joke.").orEmpty()
+
+        assertTrue(prompt.contains("young Eliana"))
+        assertTrue(prompt.contains("Eliana:"))
+        assertTrue(!prompt.contains("Olivia"))
     }
 
     @Test

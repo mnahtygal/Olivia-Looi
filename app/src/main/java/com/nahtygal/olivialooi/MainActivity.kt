@@ -6,10 +6,16 @@ import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import com.nahtygal.olivialooi.profile.KidProfileRepository
+import com.nahtygal.olivialooi.profile.SharedPreferencesKidProfileRepository
 import com.nahtygal.olivialooi.ui.LooLooApp
 import com.nahtygal.olivialooi.ui.theme.OliviaLooiTheme
 
 class MainActivity : ComponentActivity() {
+    private val kidProfileRepository: KidProfileRepository by lazy {
+        SharedPreferencesKidProfileRepository(applicationContext)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge(
@@ -18,7 +24,7 @@ class MainActivity : ComponentActivity() {
         )
         setContent {
             OliviaLooiTheme {
-                LooLooApp()
+                LooLooApp(activeKidProfile = kidProfileRepository.selectedProfile)
             }
         }
     }
