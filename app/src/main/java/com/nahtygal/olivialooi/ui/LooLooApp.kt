@@ -32,6 +32,7 @@ import com.nahtygal.olivialooi.games.memory.MemoryGameSize
 import com.nahtygal.olivialooi.games.math.MathLevel
 import com.nahtygal.olivialooi.games.spelling.SpellingLevel
 import com.nahtygal.olivialooi.games.tictactoe.TicTacToeGameMode
+import com.nahtygal.olivialooi.profile.KidExperiencePolicy
 import com.nahtygal.olivialooi.profile.KidProfile
 import com.nahtygal.olivialooi.profile.KidProfileRepository
 import com.nahtygal.olivialooi.ui.apps.AppsScreen
@@ -115,6 +116,8 @@ private fun LooLooAppContent(
 ) {
     val context = LocalContext.current
     val kidAppLauncher = remember(context) { KidAppLauncher(context) }
+    val activeProfile = LocalKidProfile.current
+    val experiencePolicy = KidExperiencePolicy.forProfile(activeProfile)
     var screenName by rememberSaveable { mutableStateOf(LooLooScreen.Home.name) }
     var gameModeName by rememberSaveable {
         mutableStateOf(TicTacToeGameMode.PersonVsPerson.name)
@@ -212,7 +215,7 @@ private fun LooLooAppContent(
         )
 
         LooLooScreen.ProfileChooser -> ProfileChooserScreen(
-            activeProfile = LocalKidProfile.current,
+            activeProfile = activeProfile,
             onProfileSelected = { profile ->
                 onProfileSelected(profile)
                 navigateTo(LooLooScreen.Home)
@@ -220,7 +223,11 @@ private fun LooLooAppContent(
             onBackToHome = { navigateTo(LooLooScreen.Home) },
         )
 
-        LooLooScreen.StoryTime -> StoryTimeScreen(onHome = { navigateTo(LooLooScreen.Home) })
+        LooLooScreen.StoryTime -> StoryTimeScreen(
+            onHome = { navigateTo(LooLooScreen.Home) },
+            featuredStoryId = experiencePolicy.storyTime.featuredStoryId,
+            featuredForDisplayName = activeProfile.displayName,
+        )
 
         LooLooScreen.Apps -> AppsScreen(
             onLaunchApp = { app ->
@@ -304,6 +311,7 @@ private fun LooLooAppContent(
 
         LooLooScreen.AnimalSounds -> AnimalSoundsScreen(
             onGamesClick = { navigateTo(LooLooScreen.Games) },
+            initialMode = experiencePolicy.animalSounds.newSessionMode,
         )
 
         LooLooScreen.CountingLevel -> CountingLevelScreen(
@@ -361,6 +369,7 @@ private fun LooLooAppContent(
         LooLooScreen.PuzzlePictures -> PuzzlePictureScreen(
             onPictureSelected = { selected ->
                 puzzlePictureName = selected.name
+                puzzleDifficultyName = experiencePolicy.puzzle.newPuzzleDifficulty.name
                 navigateTo(LooLooScreen.PuzzleDifficulty)
             },
             onGamesClick = { navigateTo(LooLooScreen.Games) },
@@ -374,6 +383,7 @@ private fun LooLooAppContent(
                 navigateTo(LooLooScreen.PuzzleBoard)
             },
             onPicturesClick = { navigateTo(LooLooScreen.PuzzlePictures) },
+            preferredDifficulty = experiencePolicy.puzzle.newPuzzleDifficulty,
         )
 
         LooLooScreen.PuzzleBoard -> PuzzleBoardScreen(

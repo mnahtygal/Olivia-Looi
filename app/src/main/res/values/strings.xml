@@ -363,6 +363,7 @@
     <string name="puzzle_card_subtitle">Let’s put it together!</string>
     <string name="puzzle_open_description">Play Picture Puzzles</string>
     <string name="puzzle_pick_picture">Pick a Puzzle</string>
+    <string name="puzzle_looloo_pick">LooLoo’s pick</string>
     <string name="puzzle_choose_difficulty">Choose Your Puzzle</string>
     <string name="puzzle_picture_description">%1$s puzzle</string>
     <plurals name="puzzle_difficulty_description">

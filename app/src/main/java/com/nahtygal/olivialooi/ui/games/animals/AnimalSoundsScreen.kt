@@ -64,6 +64,7 @@ import com.nahtygal.olivialooi.ui.theme.SnowWhite
 fun AnimalSoundsScreen(
     onGamesClick: () -> Unit,
     modifier: Modifier = Modifier,
+    initialMode: AnimalPlayMode = AnimalPlayMode.FREE_PLAY,
 ) {
     val context = LocalContext.current
     val textToSpeech = remember(context) { AndroidTextToSpeech(context.applicationContext) }
@@ -72,7 +73,7 @@ fun AnimalSoundsScreen(
     var selectedAnimalId by rememberSaveable { mutableStateOf<String?>(null) }
     var feedbackVersion by rememberSaveable { mutableIntStateOf(0) }
     var showSoundWord by rememberSaveable { mutableStateOf(false) }
-    var modeName by rememberSaveable { mutableStateOf(AnimalPlayMode.FREE_PLAY.name) }
+    var modeName by rememberSaveable { mutableStateOf(initialMode.name) }
     var quizTargetName by rememberSaveable { mutableStateOf(AnimalSoundsCatalog.animals.first().id.name) }
     var quizRound by rememberSaveable { mutableIntStateOf(0) }
     var quizCorrect by rememberSaveable { mutableStateOf<Boolean?>(null) }
