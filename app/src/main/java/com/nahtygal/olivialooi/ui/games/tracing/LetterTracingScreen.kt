@@ -74,6 +74,11 @@ import com.nahtygal.olivialooi.games.tracing.LetterTracingStateCodec
 import com.nahtygal.olivialooi.games.tracing.TracingPoint
 import com.nahtygal.olivialooi.games.tracing.TracingStroke
 import com.nahtygal.olivialooi.games.tracing.TracingMode
+import com.nahtygal.olivialooi.games.tracing.WordCatalog
+import com.nahtygal.olivialooi.games.tracing.WordTracingEngine
+import com.nahtygal.olivialooi.games.tracing.WordTracingState
+import com.nahtygal.olivialooi.games.tracing.WordTracingStateCodec
+import com.nahtygal.olivialooi.games.tracing.WordTracingSpeech
 import com.nahtygal.olivialooi.speech.AndroidTextToSpeech
 import com.nahtygal.olivialooi.ui.LocalKidProfile
 import com.nahtygal.olivialooi.ui.games.WinterGamesBackground
@@ -86,8 +91,14 @@ private val LetterTracingSaver = Saver<LetterTracingState, String>(
     restore = LetterTracingStateCodec::decode,
 )
 
+private val WordTracingSaver = Saver<WordTracingState, String>(
+    save = { state -> WordTracingStateCodec.encode(state) },
+    restore = WordTracingStateCodec::decode,
+)
+
 private enum class WritingPage {
-    MENU, NAME, ALPHABET, LOWERCASE, NAME_CELEBRATION, ALPHABET_CELEBRATION, LOWERCASE_CELEBRATION,
+    MENU, NAME, ALPHABET, LOWERCASE, WORD_CATEGORIES, WORD_PRACTICE,
+    NAME_CELEBRATION, ALPHABET_CELEBRATION, LOWERCASE_CELEBRATION, WORD_CELEBRATION,
 }
 
 @Composable
@@ -118,6 +129,18 @@ fun LetterTracingScreen(
     var lowercaseState by rememberSaveable(profile.stableId, "lowercase", stateSaver = LetterTracingSaver) {
         mutableStateOf(LetterTracingEngine.newLowercaseSession())
     }
+    var threeLetterState by rememberSaveable(profile.stableId, WordCatalog.THREE_LETTER_ID, stateSaver = WordTracingSaver) {
+        mutableStateOf(WordTracingEngine.newSession(profile.stableId, WordCatalog.THREE_LETTER_ID))
+    }
+    var fourLetterState by rememberSaveable(profile.stableId, WordCatalog.FOUR_LETTER_ID, stateSaver = WordTracingSaver) {
+        mutableStateOf(WordTracingEngine.newSession(profile.stableId, WordCatalog.FOUR_LETTER_ID))
+    }
+    var fiveLetterState by rememberSaveable(profile.stableId, WordCatalog.FIVE_LETTER_ID, stateSaver = WordTracingSaver) {
+        mutableStateOf(WordTracingEngine.newSession(profile.stableId, WordCatalog.FIVE_LETTER_ID))
+    }
+    var activeWordCategoryId by rememberSaveable(profile.stableId, "active-word-category") {
+        mutableStateOf(WordCatalog.THREE_LETTER_ID)
+    }
     val page = enumValueOf<WritingPage>(pageName)
     val alphabetIntroduction = stringResource(R.string.tracing_alphabet_introduction)
     val lowercaseIntroduction = stringResource(R.string.tracing_lowercase_introduction)
@@ -136,7 +159,26 @@ fun LetterTracingScreen(
     )
 
     DisposableEffect(speech) { onDispose { speech.close() } }
-    BackHandler(enabled = page != WritingPage.MENU) { pageName = WritingPage.MENU.name }
+    fun activeWordState(): WordTracingState = when (activeWordCategoryId) {
+        WordCatalog.FOUR_LETTER_ID -> fourLetterState
+        WordCatalog.FIVE_LETTER_ID -> fiveLetterState
+        else -> threeLetterState
+    }
+    fun updateActiveWordState(state: WordTracingState) {
+        when (state.categoryId) {
+            WordCatalog.THREE_LETTER_ID -> threeLetterState = state
+            WordCatalog.FOUR_LETTER_ID -> fourLetterState = state
+            WordCatalog.FIVE_LETTER_ID -> fiveLetterState = state
+        }
+    }
+
+    BackHandler(enabled = page != WritingPage.MENU) {
+        pageName = when (page) {
+            WritingPage.WORD_PRACTICE, WritingPage.WORD_CELEBRATION -> WritingPage.WORD_CATEGORIES
+            WritingPage.WORD_CATEGORIES -> WritingPage.MENU
+            else -> WritingPage.MENU
+        }.name
+    }
 
     when (page) {
         WritingPage.MENU -> WritingModeMenu(
@@ -155,6 +197,7 @@ fun LetterTracingScreen(
                     speech.speak(lowercaseIntroduction)
                 }
             },
+            onWords = { pageName = WritingPage.WORD_CATEGORIES.name },
             onGamesClick = onGamesClick,
             onHomeClick = onHomeClick,
             modifier = modifier,
@@ -192,6 +235,27 @@ fun LetterTracingScreen(
                 speech.speak(lowercaseCelebrationSpeech)
             },
             onWritingMenu = { pageName = WritingPage.MENU.name },
+            onHomeClick = onHomeClick,
+            modifier = modifier,
+        )
+        WritingPage.WORD_CATEGORIES -> WordCategoryMenu(
+            onCategory = { categoryId ->
+                activeWordCategoryId = categoryId
+                pageName = WritingPage.WORD_PRACTICE.name
+            },
+            onWritingMenu = { pageName = WritingPage.MENU.name },
+            onHomeClick = onHomeClick,
+            modifier = modifier,
+        )
+        WritingPage.WORD_PRACTICE -> WordPracticeScreen(
+            state = activeWordState(),
+            speech = speech,
+            onStateChange = ::updateActiveWordState,
+            onComplete = { completedWord ->
+                pageName = WritingPage.WORD_CELEBRATION.name
+                speech.speak(WordTracingSpeech.completion(tracingName.displayName, completedWord))
+            },
+            onCategories = { pageName = WritingPage.WORD_CATEGORIES.name },
             onHomeClick = onHomeClick,
             modifier = modifier,
         )
@@ -240,6 +304,24 @@ fun LetterTracingScreen(
             onBack = { pageName = WritingPage.MENU.name },
             modifier = modifier,
         )
+        WritingPage.WORD_CELEBRATION -> {
+            val wordState = activeWordState()
+            WordTracingCelebration(
+                state = wordState,
+                displayName = tracingName.displayName,
+                onNextWord = {
+                    updateActiveWordState(WordTracingEngine.nextWord(wordState))
+                    pageName = WritingPage.WORD_PRACTICE.name
+                },
+                onPracticeAgain = {
+                    updateActiveWordState(WordTracingEngine.practiceWordAgain(wordState))
+                    pageName = WritingPage.WORD_PRACTICE.name
+                },
+                onCategories = { pageName = WritingPage.WORD_CATEGORIES.name },
+                onHomeClick = onHomeClick,
+                modifier = modifier,
+            )
+        }
     }
 }
 
@@ -368,6 +450,7 @@ private fun WritingModeMenu(
     onName: () -> Unit,
     onAlphabet: () -> Unit,
     onLowercase: () -> Unit,
+    onWords: () -> Unit,
     onGamesClick: () -> Unit,
     onHomeClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -394,21 +477,27 @@ private fun WritingModeMenu(
             )
             Spacer(Modifier.height(24.dp))
             WritingModeButton(
-                label = stringResource(R.string.tracing_my_name),
+                label = stringResource(R.string.tracing_trace_my_name),
                 symbol = "✎",
                 onClick = onName,
             )
             Spacer(Modifier.height(14.dp))
             WritingModeButton(
-                label = stringResource(R.string.tracing_uppercase_abcs),
+                label = stringResource(R.string.tracing_trace_uppercase),
                 symbol = "ABC",
                 onClick = onAlphabet,
             )
             Spacer(Modifier.height(14.dp))
             WritingModeButton(
-                label = stringResource(R.string.tracing_lowercase_abcs),
+                label = stringResource(R.string.tracing_trace_lowercase),
                 symbol = "abc",
                 onClick = onLowercase,
+            )
+            Spacer(Modifier.height(14.dp))
+            WritingModeButton(
+                label = stringResource(R.string.tracing_trace_words),
+                symbol = "CAT",
+                onClick = onWords,
             )
             Spacer(Modifier.height(20.dp))
             TraceButton(stringResource(R.string.back_to_games), onGamesClick, true, Modifier.widthIn(max = 560.dp).fillMaxWidth())
@@ -432,7 +521,7 @@ private fun WritingModeButton(label: String, symbol: String, onClick: () -> Unit
 }
 
 @Composable
-private fun WritingTopNavigation(
+internal fun WritingTopNavigation(
     onHomeClick: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
@@ -500,7 +589,7 @@ private val WritingHomeVector: ImageVector = ImageVector.Builder(
 }.build()
 
 @Composable
-private fun TracingCanvas(
+internal fun TracingCanvas(
     state: LetterTracingState,
     activePoints: MutableList<TracingPoint>,
     onStrokeFinished: (List<TracingPoint>) -> Unit,
@@ -580,7 +669,7 @@ private fun TracingControls(
 }
 
 @Composable
-private fun TraceButton(label: String, onClick: () -> Unit, enabled: Boolean, modifier: Modifier) {
+internal fun TraceButton(label: String, onClick: () -> Unit, enabled: Boolean, modifier: Modifier) {
     OutlinedButton(
         onClick = onClick,
         enabled = enabled,
@@ -703,7 +792,7 @@ private fun LowercaseTracingCelebration(
 }
 
 @Composable
-private fun CelebrationFrame(
+internal fun CelebrationFrame(
     onHomeClick: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
@@ -751,7 +840,7 @@ private fun CelebrationFrame(
 }
 
 @Composable
-private fun CelebrationMessage(message: String) {
+internal fun CelebrationMessage(message: String) {
     Text(
         text = message,
         color = DeepIndigo.copy(alpha = .82f),
@@ -763,7 +852,7 @@ private fun CelebrationMessage(message: String) {
 }
 
 @Composable
-private fun CelebrationButton(label: String, onClick: () -> Unit) {
+internal fun CelebrationButton(label: String, onClick: () -> Unit) {
     Button(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth().heightIn(min = 60.dp),

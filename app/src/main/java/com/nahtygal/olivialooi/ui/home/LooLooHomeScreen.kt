@@ -2,9 +2,11 @@ package com.nahtygal.olivialooi.ui.home
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -75,6 +77,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import androidx.core.content.edit
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -106,6 +109,7 @@ private enum class HomeSpeechState {
     Thinking,
     Response,
     NetworkError,
+    LocalNetworkPermissionDenied,
     NoSpeech,
     PermissionDenied,
     Error,
@@ -127,7 +131,15 @@ fun LooLooHomeScreen(
     var microphoneAmplitude by remember { mutableFloatStateOf(0f) }
     var recognizedText by remember { mutableStateOf<String?>(null) }
     var jarvisResponse by remember { mutableStateOf<String?>(null) }
-    var permissionRequestAttempted by rememberSaveable { mutableStateOf(false) }
+    var microphonePermissionRequestAttempted by rememberSaveable { mutableStateOf(false) }
+    val permissionPreferences = remember(context) {
+        context.getSharedPreferences(PERMISSION_PREFERENCES, Context.MODE_PRIVATE)
+    }
+    var localNetworkPermissionRequestAttempted by rememberSaveable {
+        mutableStateOf(
+            permissionPreferences.getBoolean(LOCAL_NETWORK_PERMISSION_REQUESTED, false),
+        )
+    }
 
     val jarvisClient = remember(context) {
         AndroidJarvisChatClient(context.applicationContext)
@@ -138,6 +150,11 @@ fun LooLooHomeScreen(
     val kidBrain = remember(activeProfile) { LooLooKidBrain(activeProfile) }
 
     fun sendToJarvis(childMessage: String) {
+        if (!context.hasLocalNetworkAccess()) {
+            jarvisResponse = null
+            speechState = HomeSpeechState.LocalNetworkPermissionDenied
+            return
+        }
         val prompt = kidBrain.buildPrompt(childMessage)
         if (prompt == null) {
             recognizedText = null
@@ -205,14 +222,76 @@ fun LooLooHomeScreen(
     }
 
     val permissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission(),
-    ) { granted ->
-        if (granted) {
+        contract = ActivityResultContracts.RequestMultiplePermissions(),
+    ) {
+        when {
+            !context.hasLocalNetworkAccess() -> {
+                microphoneAmplitude = 0f
+                recognizedText = null
+                speechState = HomeSpeechState.LocalNetworkPermissionDenied
+            }
+
+            !context.hasMicrophoneAccess() -> {
+                microphoneAmplitude = 0f
+                recognizedText = null
+                speechState = HomeSpeechState.PermissionDenied
+            }
+
+            else -> {
+                startSpeechRecognition()
+            }
+        }
+    }
+
+    fun permissionDecision(): LooLooPermissionDecision =
+        LocalNetworkPermissionPolicy.decide(
+            sdkInt = Build.VERSION.SDK_INT,
+            localNetworkGranted = context.hasLocalNetworkAccess(),
+            microphoneGranted = context.hasMicrophoneAccess(),
+            localNetworkRequestAttempted = localNetworkPermissionRequestAttempted,
+            microphoneRequestAttempted = microphonePermissionRequestAttempted,
+        )
+
+    fun handlePermissionDecision(
+        decision: LooLooPermissionDecision,
+        onReady: () -> Unit,
+    ) {
+        when (decision) {
+            LooLooPermissionDecision.Ready -> onReady()
+            LooLooPermissionDecision.LocalNetworkUnavailable -> {
+                speechState = HomeSpeechState.LocalNetworkPermissionDenied
+            }
+
+            LooLooPermissionDecision.MicrophoneUnavailable -> {
+                speechState = HomeSpeechState.PermissionDenied
+            }
+
+            is LooLooPermissionDecision.Request -> {
+                val permissions = decision.permissions.map { permission ->
+                    when (permission) {
+                        LooLooPermission.LocalNetwork -> {
+                            localNetworkPermissionRequestAttempted = true
+                            permissionPreferences.edit {
+                                putBoolean(LOCAL_NETWORK_PERMISSION_REQUESTED, true)
+                            }
+                            LocalNetworkPermissionPolicy.PERMISSION
+                        }
+
+                        LooLooPermission.Microphone -> {
+                            microphonePermissionRequestAttempted = true
+                            Manifest.permission.RECORD_AUDIO
+                        }
+                    }
+                }
+                speechState = HomeSpeechState.Starting
+                permissionLauncher.launch(permissions.toTypedArray())
+            }
+        }
+    }
+
+    fun beginSpeechRecognition() {
+        handlePermissionDecision(permissionDecision()) {
             startSpeechRecognition()
-        } else {
-            microphoneAmplitude = 0f
-            recognizedText = null
-            speechState = HomeSpeechState.PermissionDenied
         }
     }
 
@@ -259,27 +338,13 @@ fun LooLooHomeScreen(
             -> Unit
 
             HomeSpeechState.NetworkError -> {
-                recognizedText?.let(::sendToJarvis)
+                handlePermissionDecision(permissionDecision()) {
+                    recognizedText?.let(::sendToJarvis)
+                }
                 Unit
             }
 
-            else -> {
-                val hasPermission = ContextCompat.checkSelfPermission(
-                    context,
-                    Manifest.permission.RECORD_AUDIO,
-                ) == PackageManager.PERMISSION_GRANTED
-
-                when {
-                    hasPermission -> startSpeechRecognition()
-                    !permissionRequestAttempted -> {
-                        permissionRequestAttempted = true
-                        speechState = HomeSpeechState.Starting
-                        permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-                    }
-
-                    else -> speechState = HomeSpeechState.PermissionDenied
-                }
-            }
+            else -> beginSpeechRecognition()
         }
     }
 
@@ -353,6 +418,8 @@ private fun LooLooHomeContent(
         HomeSpeechState.Thinking -> stringResource(R.string.looloo_thinking_message)
         HomeSpeechState.Response -> stringResource(R.string.looloo_response_label)
         HomeSpeechState.NetworkError -> stringResource(R.string.looloo_network_error_message)
+        HomeSpeechState.LocalNetworkPermissionDenied ->
+            stringResource(R.string.looloo_local_network_permission_message)
         HomeSpeechState.NoSpeech -> stringResource(R.string.looloo_no_speech_message)
         HomeSpeechState.PermissionDenied -> stringResource(R.string.looloo_microphone_permission_message)
         HomeSpeechState.Error -> stringResource(R.string.looloo_recognition_error_message)
@@ -365,6 +432,8 @@ private fun LooLooHomeContent(
 
         HomeSpeechState.Processing -> stringResource(R.string.looloo_processing_prompt)
         HomeSpeechState.NetworkError -> stringResource(R.string.looloo_network_retry_prompt)
+        HomeSpeechState.LocalNetworkPermissionDenied ->
+            stringResource(R.string.looloo_local_network_permission_help)
         HomeSpeechState.PermissionDenied -> stringResource(R.string.looloo_microphone_permission_help)
         HomeSpeechState.NoSpeech,
         HomeSpeechState.Error,
@@ -392,6 +461,7 @@ private fun LooLooHomeContent(
         HomeSpeechState.NoSpeech,
         HomeSpeechState.Error,
         HomeSpeechState.PermissionDenied,
+        HomeSpeechState.LocalNetworkPermissionDenied,
         -> R.string.looloo_try_again_action
 
         HomeSpeechState.Starting,
@@ -711,6 +781,21 @@ private fun MicrophoneLevelMeter(amplitude: Float, modifier: Modifier = Modifier
 }
 
 private const val METER_VISIBLE_THRESHOLD = 0.035f
+private const val PERMISSION_PREFERENCES = "looloo_permission_requests"
+private const val LOCAL_NETWORK_PERMISSION_REQUESTED = "local_network_permission_requested"
+
+private fun Context.hasLocalNetworkAccess(): Boolean =
+    !LocalNetworkPermissionPolicy.requiresRuntimePermission(Build.VERSION.SDK_INT) ||
+        ContextCompat.checkSelfPermission(
+            this,
+            LocalNetworkPermissionPolicy.PERMISSION,
+        ) == PackageManager.PERMISSION_GRANTED
+
+private fun Context.hasMicrophoneAccess(): Boolean =
+    ContextCompat.checkSelfPermission(
+        this,
+        Manifest.permission.RECORD_AUDIO,
+    ) == PackageManager.PERMISSION_GRANTED
 
 @Composable
 private fun SettingsButton(onClick: () -> Unit) {

@@ -35,11 +35,12 @@ internal class AndroidTextToSpeech(
     }
 
     fun speak(text: String, onFinished: ((Boolean) -> Unit)? = null) {
-        if (text.isBlank() || isClosed.get()) {
+        val spokenText = SpeechTextSanitizer.sanitize(text)
+        if (spokenText.isBlank() || isClosed.get()) {
             onFinished?.invoke(false)
             return
         }
-        val request = SpeechRequest(text, speechGeneration.incrementAndGet(), onFinished)
+        val request = SpeechRequest(spokenText, speechGeneration.incrementAndGet(), onFinished)
         when (val offer = pendingSpeech.offer(request)) {
             SpeechOffer.Queued -> Unit
             is SpeechOffer.Ready -> executeUnlessClosed { speakIfCurrent(offer.request) }
