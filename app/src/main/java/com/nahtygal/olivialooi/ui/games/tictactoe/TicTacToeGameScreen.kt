@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -135,7 +134,6 @@ fun TicTacToeGameScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .statusBarsPadding()
-                    .navigationBarsPadding()
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = if (tabletLayout) 28.dp else 16.dp, vertical = 10.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,

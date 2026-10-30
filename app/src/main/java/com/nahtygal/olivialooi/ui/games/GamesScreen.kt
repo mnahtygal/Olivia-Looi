@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
@@ -66,6 +65,7 @@ fun GamesScreen(
     onPianoClick: () -> Unit,
     onDrumsClick: () -> Unit,
     onBilliardsClick: () -> Unit,
+    onLetterTracingClick: () -> Unit,
     onHomeClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -77,7 +77,6 @@ fun GamesScreen(
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
                     .statusBarsPadding()
-                    .navigationBarsPadding()
                     .padding(
                         start = 22.dp,
                         top = if (tabletLayout) 8.dp else 16.dp,
@@ -228,7 +227,14 @@ fun GamesScreen(
                                 tabletLayout = true,
                                 modifier = Modifier.weight(1f),
                             ) { BilliardsGameGlyph(Modifier.fillMaxSize()) }
-                            Spacer(Modifier.weight(1f))
+                            GameMenuCard(
+                                labelResource = R.string.tracing_name,
+                                subtitleResource = R.string.tracing_card_subtitle,
+                                accessibilityResource = R.string.open_tracing_description,
+                                onClick = onLetterTracingClick,
+                                tabletLayout = true,
+                                modifier = Modifier.weight(1f),
+                            ) { LetterTracingGlyph(Modifier.fillMaxSize()) }
                         }
                     }
                 } else {
@@ -342,6 +348,14 @@ fun GamesScreen(
                             tabletLayout = false,
                             modifier = Modifier.fillMaxWidth(),
                         ) { BilliardsGameGlyph(Modifier.fillMaxSize()) }
+                        GameMenuCard(
+                            labelResource = R.string.tracing_name,
+                            subtitleResource = R.string.tracing_card_subtitle,
+                            accessibilityResource = R.string.open_tracing_description,
+                            onClick = onLetterTracingClick,
+                            tabletLayout = false,
+                            modifier = Modifier.fillMaxWidth(),
+                        ) { LetterTracingGlyph(Modifier.fillMaxSize()) }
                     }
                 }
 
@@ -352,6 +366,28 @@ fun GamesScreen(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun LetterTracingGlyph(modifier: Modifier = Modifier) {
+    Canvas(modifier = modifier) {
+        val stroke = size.minDimension * .09f
+        val effect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(
+            floatArrayOf(stroke * .15f, stroke * .42f),
+        )
+        val path = androidx.compose.ui.graphics.Path().apply {
+            moveTo(size.width * .18f, size.height * .82f)
+            lineTo(size.width * .50f, size.height * .15f)
+            lineTo(size.width * .82f, size.height * .82f)
+            moveTo(size.width * .32f, size.height * .58f)
+            lineTo(size.width * .68f, size.height * .58f)
+        }
+        drawPath(
+            path,
+            Color(0xFF7558C8),
+            style = Stroke(width = stroke, cap = StrokeCap.Round, pathEffect = effect),
+        )
     }
 }
 

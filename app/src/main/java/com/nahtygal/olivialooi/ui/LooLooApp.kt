@@ -52,6 +52,7 @@ import com.nahtygal.olivialooi.ui.games.spelling.SpeakAndSpellGameScreen
 import com.nahtygal.olivialooi.ui.games.spelling.SpeakAndSpellLevelScreen
 import com.nahtygal.olivialooi.ui.games.tictactoe.TicTacToeGameScreen
 import com.nahtygal.olivialooi.ui.games.tictactoe.TicTacToeModeScreen
+import com.nahtygal.olivialooi.ui.games.tracing.LetterTracingScreen
 import com.nahtygal.olivialooi.ui.stories.StoryTimeScreen
 import com.nahtygal.olivialooi.ui.home.HomeActivity
 import com.nahtygal.olivialooi.ui.home.LooLooHomeScreen
@@ -87,6 +88,7 @@ private enum class LooLooScreen {
     StoryTime,
     BilliardsModes,
     BilliardsTable,
+    LetterTracing,
 }
 
 @Composable
@@ -185,6 +187,7 @@ private fun LooLooAppContent(
                 LooLooScreen.ShapesAdventure -> LooLooScreen.Games
                 LooLooScreen.AbcActivity -> LooLooScreen.AbcAdventure
                 LooLooScreen.AbcAdventure -> LooLooScreen.Games
+                LooLooScreen.LetterTracing -> LooLooScreen.Games
                 LooLooScreen.Games -> LooLooScreen.Home
                 LooLooScreen.StoryTime -> LooLooScreen.Home
                 LooLooScreen.Apps -> LooLooScreen.Home
@@ -250,6 +253,12 @@ private fun LooLooAppContent(
             onPuzzlesClick = { navigateTo(LooLooScreen.PuzzlePictures) },
             onShapesClick = { navigateTo(LooLooScreen.ShapesAdventure) },
             onAbcClick = { navigateTo(LooLooScreen.AbcAdventure) },
+            onLetterTracingClick = { navigateTo(LooLooScreen.LetterTracing) },
+            onHomeClick = { navigateTo(LooLooScreen.Home) },
+        )
+
+        LooLooScreen.LetterTracing -> LetterTracingScreen(
+            onGamesClick = { navigateTo(LooLooScreen.Games) },
             onHomeClick = { navigateTo(LooLooScreen.Home) },
         )
 

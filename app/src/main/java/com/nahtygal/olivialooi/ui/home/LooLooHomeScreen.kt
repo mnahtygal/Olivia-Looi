@@ -30,7 +30,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -96,6 +95,7 @@ import com.nahtygal.olivialooi.ui.theme.OliviaLooiTheme
 import com.nahtygal.olivialooi.ui.theme.ReadyMint
 import com.nahtygal.olivialooi.ui.theme.SkyBlue
 import com.nahtygal.olivialooi.ui.theme.SnowWhite
+import com.nahtygal.olivialooi.ui.navigationSafeContentPadding
 import kotlin.math.ceil
 
 private enum class HomeSpeechState {
@@ -416,7 +416,7 @@ private fun LooLooHomeContent(
                 ),
             )
             .statusBarsPadding()
-            .navigationBarsPadding(),
+            .navigationSafeContentPadding(),
     ) {
         // Keep the portrait artwork readable; extra speech content scrolls instead
         // of squeezing the girls or the functional controls into the remaining space.

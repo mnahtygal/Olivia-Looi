@@ -29,6 +29,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.nahtygal.olivialooi.speech.AndroidTextToSpeech
 import com.nahtygal.olivialooi.stories.*
+import com.nahtygal.olivialooi.ui.navigationSafeContentPadding
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 import kotlin.math.cos
@@ -88,7 +89,7 @@ fun StoryTimeScreen(
     }
     val scroll = rememberScrollState()
     LaunchedEffect(library, state.storyId, state.page, state.mode, state.complete) { scroll.scrollTo(0) }
-    BoxWithConstraints(Modifier.fillMaxSize().background(Cream).statusBarsPadding().navigationBarsPadding()) {
+    BoxWithConstraints(Modifier.fillMaxSize().background(Cream).statusBarsPadding().navigationSafeContentPadding()) {
         val tablet = maxWidth >= 600.dp
         Column(Modifier.fillMaxSize().verticalScroll(scroll).padding(if (tablet) 28.dp else 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {

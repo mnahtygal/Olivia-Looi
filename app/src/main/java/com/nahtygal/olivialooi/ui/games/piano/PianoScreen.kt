@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.widthIn
@@ -168,7 +167,7 @@ fun PianoScreen(onGamesClick: () -> Unit) {
             val tablet = maxWidth >= 600.dp
             Column(
                 Modifier.fillMaxSize().verticalScroll(rememberScrollState())
-                    .statusBarsPadding().navigationBarsPadding().padding(horizontal = if (tablet) 20.dp else 8.dp, vertical = 12.dp),
+                    .statusBarsPadding().padding(horizontal = if (tablet) 20.dp else 8.dp, vertical = 12.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {

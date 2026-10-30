@@ -31,6 +31,7 @@ import com.nahtygal.olivialooi.ui.theme.FrostBlue
 import com.nahtygal.olivialooi.ui.theme.IceBlue
 import com.nahtygal.olivialooi.ui.theme.SkyBlue
 import com.nahtygal.olivialooi.ui.theme.SnowWhite
+import com.nahtygal.olivialooi.ui.navigationSafeContentPadding
 
 @Composable
 fun WinterGamesBackground(
@@ -88,7 +89,12 @@ fun WinterGamesBackground(
                 )
             }
         }
-        content()
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .navigationSafeContentPadding(),
+            content = content,
+        )
     }
 }
 
