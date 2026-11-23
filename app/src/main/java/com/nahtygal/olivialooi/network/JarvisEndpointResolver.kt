@@ -56,20 +56,26 @@ internal class JarvisEndpointResolver(context: Context) {
             JarvisChatConfig.baseUrl + "/health"
         )
 
-        val connection = network.openConnection(url) as HttpsURLConnection
+        var connection: HttpsURLConnection? = null
 
         return try {
+            connection = network.openConnection(url) as HttpsURLConnection
             connection.sslSocketFactory = createHomeSocketFactory()
             connection.requestMethod = "GET"
             connection.connectTimeout = 1500
             connection.readTimeout = 1500
             connection.instanceFollowRedirects = false
 
-            connection.responseCode == 200
+            connection.responseCode == 200 &&
+                connection.inputStream.bufferedReader().use { reader ->
+                    val body = reader.readText()
+                    body.length <= 256 &&
+                        org.json.JSONObject(body).optString("status") == "ok"
+                }
         } catch (_: Exception) {
             false
         } finally {
-            connection.disconnect()
+            connection?.disconnect()
         }
     }
 
