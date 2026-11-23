@@ -28,9 +28,12 @@ internal object LocalNetworkPermissionPolicy {
         microphoneGranted: Boolean,
         localNetworkRequestAttempted: Boolean,
         microphoneRequestAttempted: Boolean,
+        requiresHomeNetwork: Boolean = true,
     ): LooLooPermissionDecision {
         val localNetworkMissing =
-            requiresRuntimePermission(sdkInt) && !localNetworkGranted
+            requiresHomeNetwork &&
+                requiresRuntimePermission(sdkInt) &&
+                !localNetworkGranted
 
         if (localNetworkMissing && localNetworkRequestAttempted) {
             return LooLooPermissionDecision.LocalNetworkUnavailable
