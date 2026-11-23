@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.widthIn
@@ -64,6 +63,7 @@ import com.nahtygal.olivialooi.ui.theme.SnowWhite
 fun AnimalSoundsScreen(
     onGamesClick: () -> Unit,
     modifier: Modifier = Modifier,
+    initialMode: AnimalPlayMode = AnimalPlayMode.FREE_PLAY,
 ) {
     val context = LocalContext.current
     val textToSpeech = remember(context) { AndroidTextToSpeech(context.applicationContext) }
@@ -72,7 +72,7 @@ fun AnimalSoundsScreen(
     var selectedAnimalId by rememberSaveable { mutableStateOf<String?>(null) }
     var feedbackVersion by rememberSaveable { mutableIntStateOf(0) }
     var showSoundWord by rememberSaveable { mutableStateOf(false) }
-    var modeName by rememberSaveable { mutableStateOf(AnimalPlayMode.FREE_PLAY.name) }
+    var modeName by rememberSaveable { mutableStateOf(initialMode.name) }
     var quizTargetName by rememberSaveable { mutableStateOf(AnimalSoundsCatalog.animals.first().id.name) }
     var quizRound by rememberSaveable { mutableIntStateOf(0) }
     var quizCorrect by rememberSaveable { mutableStateOf<Boolean?>(null) }
@@ -104,7 +104,6 @@ fun AnimalSoundsScreen(
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
                     .statusBarsPadding()
-                    .navigationBarsPadding()
                     .padding(
                         start = if (tabletLayout) 24.dp else 16.dp,
                         top = if (tabletLayout) 8.dp else 12.dp,

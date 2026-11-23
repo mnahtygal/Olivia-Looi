@@ -116,4 +116,9 @@ object StoryCatalog {
             "The sisters sat beneath the tree. Helping the garden had made room for everyone to grow."),
     )
     fun find(id: String): Story? = stories.firstOrNull { it.id == id }
+
+    fun featuredFirst(featuredStoryId: String): List<Story> {
+        val featured = find(featuredStoryId) ?: return stories
+        return listOf(featured) + stories.filterNot { it.id == featuredStoryId }
+    }
 }

@@ -22,7 +22,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -224,7 +223,7 @@ fun PuzzleBoardScreen(
             val boardWidth = if (sideBySide) minOf((maxWidth - 64.dp) * .57f, 620.dp, (maxHeight - 270.dp).coerceAtLeast(300.dp)) else minOf(maxWidth - 32.dp, 580.dp)
             Column(
                 Modifier.fillMaxSize().verticalScroll(scroll, enabled = !drag.grabbed && drag.piece == null)
-                    .statusBarsPadding().navigationBarsPadding().padding(16.dp),
+                    .statusBarsPadding().padding(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {

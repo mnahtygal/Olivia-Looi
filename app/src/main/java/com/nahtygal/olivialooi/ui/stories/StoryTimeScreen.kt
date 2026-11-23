@@ -29,6 +29,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.nahtygal.olivialooi.speech.AndroidTextToSpeech
 import com.nahtygal.olivialooi.stories.*
+import com.nahtygal.olivialooi.ui.navigationSafeContentPadding
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 import kotlin.math.cos
@@ -39,9 +40,16 @@ private val Cream = Color(0xFFF4F0E7)
 private val StorySaver = Saver<StoryPlaybackState, String>(save = { StoryEngine.encode(it) }, restore = StoryEngine::decode)
 
 @Composable
-fun StoryTimeScreen(onHome: () -> Unit) {
+fun StoryTimeScreen(
+    onHome: () -> Unit,
+    featuredStoryId: String = StoryCatalog.stories.first().id,
+    featuredForDisplayName: String? = null,
+) {
     var library by rememberSaveable { mutableStateOf(true) }
-    var state by rememberSaveable(stateSaver = StorySaver) { mutableStateOf(StoryEngine.open(StoryCatalog.stories.first().id)) }
+    var state by rememberSaveable(stateSaver = StorySaver) {
+        mutableStateOf(StoryEngine.open(featuredStoryId))
+    }
+    val libraryStories = StoryCatalog.featuredFirst(featuredStoryId)
     val context = LocalContext.current
     val owner = LocalLifecycleOwner.current
     val speech = remember(context) { AndroidTextToSpeech(context.applicationContext, offlineOnly = true) }
@@ -81,20 +89,31 @@ fun StoryTimeScreen(onHome: () -> Unit) {
     }
     val scroll = rememberScrollState()
     LaunchedEffect(library, state.storyId, state.page, state.mode, state.complete) { scroll.scrollTo(0) }
-    BoxWithConstraints(Modifier.fillMaxSize().background(Cream).statusBarsPadding().navigationBarsPadding()) {
+    BoxWithConstraints(Modifier.fillMaxSize().background(Cream).statusBarsPadding().navigationSafeContentPadding()) {
         val tablet = maxWidth >= 600.dp
         Column(Modifier.fillMaxSize().verticalScroll(scroll).padding(if (tablet) 28.dp else 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Text("Story Time", color = Night, fontSize = 32.sp, fontWeight = FontWeight.Bold)
             if (library) {
                 Text("Pick a story!", color = Night, fontSize = 23.sp)
-                StoryCatalog.stories.chunked(if (tablet) 2 else 1).forEach { row ->
+                libraryStories.chunked(if (tablet) 2 else 1).forEach { row ->
                     Row(Modifier.widthIn(max = 960.dp).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(18.dp)) {
                         row.forEach { story ->
                             Card(onClick = { change(StoryEngine.open(story.id, state)); library = false }, modifier = Modifier.weight(1f)
                                 .semantics(mergeDescendants = true) { contentDescription = "${story.title}. ${story.shortDescription}" },
                                 colors = CardDefaults.cardColors(containerColor = Color.White)) {
                                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                                    if (
+                                        featuredForDisplayName != null &&
+                                        story.id == featuredStoryId
+                                    ) {
+                                        Text(
+                                            "Featured for $featuredForDisplayName",
+                                            color = Color(0xFF526B45),
+                                            fontSize = 17.sp,
+                                            fontWeight = FontWeight.Bold,
+                                        )
+                                    }
                                     StoryIllustration(story.coverVisual, 6, Modifier.fillMaxWidth().height(170.dp))
                                     Text(story.title, color = Night, fontSize = 23.sp, fontWeight = FontWeight.Bold)
                                     Text(story.shortDescription, color = Night, fontSize = 18.sp)

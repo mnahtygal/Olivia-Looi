@@ -7,6 +7,7 @@ import com.nahtygal.olivialooi.ui.games.billiards.BilliardsModeScreen
 import com.nahtygal.olivialooi.ui.games.billiards.BilliardsTableScreen
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -31,6 +32,9 @@ import com.nahtygal.olivialooi.games.memory.MemoryGameSize
 import com.nahtygal.olivialooi.games.math.MathLevel
 import com.nahtygal.olivialooi.games.spelling.SpellingLevel
 import com.nahtygal.olivialooi.games.tictactoe.TicTacToeGameMode
+import com.nahtygal.olivialooi.profile.KidExperiencePolicy
+import com.nahtygal.olivialooi.profile.KidProfile
+import com.nahtygal.olivialooi.profile.KidProfileRepository
 import com.nahtygal.olivialooi.ui.apps.AppsScreen
 import com.nahtygal.olivialooi.ui.games.GamesScreen
 import com.nahtygal.olivialooi.ui.games.abc.AbcActivityScreen
@@ -48,12 +52,16 @@ import com.nahtygal.olivialooi.ui.games.spelling.SpeakAndSpellGameScreen
 import com.nahtygal.olivialooi.ui.games.spelling.SpeakAndSpellLevelScreen
 import com.nahtygal.olivialooi.ui.games.tictactoe.TicTacToeGameScreen
 import com.nahtygal.olivialooi.ui.games.tictactoe.TicTacToeModeScreen
+import com.nahtygal.olivialooi.ui.games.tracing.LetterTracingScreen
 import com.nahtygal.olivialooi.ui.stories.StoryTimeScreen
 import com.nahtygal.olivialooi.ui.home.HomeActivity
 import com.nahtygal.olivialooi.ui.home.LooLooHomeScreen
+import com.nahtygal.olivialooi.speech.Opponent
+import com.nahtygal.olivialooi.ui.profile.ProfileChooserScreen
 
 private enum class LooLooScreen {
     Home,
+    ProfileChooser,
     Apps,
     Games,
     TicTacToeMode,
@@ -81,12 +89,38 @@ private enum class LooLooScreen {
     StoryTime,
     BilliardsModes,
     BilliardsTable,
+    LetterTracing,
 }
 
 @Composable
-fun LooLooApp() {
+internal fun LooLooApp(profileRepository: KidProfileRepository) {
+    val profileState = remember(profileRepository) {
+        ActiveKidProfileState(profileRepository)
+    }
+    LooLooApp(
+        activeKidProfile = profileState.activeProfile,
+        onProfileSelected = profileState::selectProfile,
+    )
+}
+
+@Composable
+internal fun LooLooApp(
+    activeKidProfile: KidProfile = KidProfile.LEGACY_DEFAULT,
+    onProfileSelected: (KidProfile) -> Unit = {},
+) {
+    CompositionLocalProvider(LocalKidProfile provides activeKidProfile) {
+        LooLooAppContent(onProfileSelected = onProfileSelected)
+    }
+}
+
+@Composable
+private fun LooLooAppContent(
+    onProfileSelected: (KidProfile) -> Unit,
+) {
     val context = LocalContext.current
     val kidAppLauncher = remember(context) { KidAppLauncher(context) }
+    val activeProfile = LocalKidProfile.current
+    val experiencePolicy = KidExperiencePolicy.forProfile(activeProfile)
     var screenName by rememberSaveable { mutableStateOf(LooLooScreen.Home.name) }
     var gameModeName by rememberSaveable {
         mutableStateOf(TicTacToeGameMode.PersonVsPerson.name)
@@ -154,9 +188,11 @@ fun LooLooApp() {
                 LooLooScreen.ShapesAdventure -> LooLooScreen.Games
                 LooLooScreen.AbcActivity -> LooLooScreen.AbcAdventure
                 LooLooScreen.AbcAdventure -> LooLooScreen.Games
+                LooLooScreen.LetterTracing -> LooLooScreen.Games
                 LooLooScreen.Games -> LooLooScreen.Home
                 LooLooScreen.StoryTime -> LooLooScreen.Home
                 LooLooScreen.Apps -> LooLooScreen.Home
+                LooLooScreen.ProfileChooser -> LooLooScreen.Home
                 LooLooScreen.Home -> LooLooScreen.Home
             },
         )
@@ -164,9 +200,34 @@ fun LooLooApp() {
 
     when (screen) {
         LooLooScreen.Home -> LooLooHomeScreen(
+            onVoiceActivity = { id, opponent ->
+                val destination = when (id) {
+                    "tictactoe" -> {
+                        gameModeName = if (opponent == Opponent.PERSON) TicTacToeGameMode.PersonVsPerson.name else TicTacToeGameMode.PersonVsComputer.name
+                        LooLooScreen.TicTacToeGame
+                    }
+                    "animals" -> LooLooScreen.AnimalSounds
+                    "memory" -> LooLooScreen.MemoryMatchMode
+                    "coloring" -> LooLooScreen.ColoringPictures
+                    "spelling" -> LooLooScreen.SpeakAndSpellLevel
+                    "counting" -> LooLooScreen.CountingLevel
+                    "math" -> LooLooScreen.MathLevel
+                    "billiards" -> LooLooScreen.BilliardsModes
+                    "drums" -> LooLooScreen.Drums
+                    "piano" -> LooLooScreen.Piano
+                    "puzzles" -> LooLooScreen.PuzzlePictures
+                    "shapes" -> LooLooScreen.ShapesAdventure
+                    "abc" -> LooLooScreen.AbcAdventure
+                    "tracing" -> LooLooScreen.LetterTracing
+                    "story" -> LooLooScreen.StoryTime
+                    else -> LooLooScreen.Home
+                }
+                navigateTo(destination)
+            },
             onGamesClick = { navigateTo(LooLooScreen.Games) },
             onAppsClick = { navigateTo(LooLooScreen.Apps) },
             onStoriesClick = { navigateTo(LooLooScreen.StoryTime) },
+            onSwitchPlayerClick = { navigateTo(LooLooScreen.ProfileChooser) },
             onActivityClick = { activity ->
                 navigateTo(when (activity) {
                     HomeActivity.PIANO -> LooLooScreen.Piano
@@ -181,7 +242,20 @@ fun LooLooApp() {
             },
         )
 
-        LooLooScreen.StoryTime -> StoryTimeScreen(onHome = { navigateTo(LooLooScreen.Home) })
+        LooLooScreen.ProfileChooser -> ProfileChooserScreen(
+            activeProfile = activeProfile,
+            onProfileSelected = { profile ->
+                onProfileSelected(profile)
+                navigateTo(LooLooScreen.Home)
+            },
+            onBackToHome = { navigateTo(LooLooScreen.Home) },
+        )
+
+        LooLooScreen.StoryTime -> StoryTimeScreen(
+            onHome = { navigateTo(LooLooScreen.Home) },
+            featuredStoryId = experiencePolicy.storyTime.featuredStoryId,
+            featuredForDisplayName = activeProfile.displayName,
+        )
 
         LooLooScreen.Apps -> AppsScreen(
             onLaunchApp = { app ->
@@ -204,6 +278,12 @@ fun LooLooApp() {
             onPuzzlesClick = { navigateTo(LooLooScreen.PuzzlePictures) },
             onShapesClick = { navigateTo(LooLooScreen.ShapesAdventure) },
             onAbcClick = { navigateTo(LooLooScreen.AbcAdventure) },
+            onLetterTracingClick = { navigateTo(LooLooScreen.LetterTracing) },
+            onHomeClick = { navigateTo(LooLooScreen.Home) },
+        )
+
+        LooLooScreen.LetterTracing -> LetterTracingScreen(
+            onGamesClick = { navigateTo(LooLooScreen.Games) },
             onHomeClick = { navigateTo(LooLooScreen.Home) },
         )
 
@@ -265,6 +345,7 @@ fun LooLooApp() {
 
         LooLooScreen.AnimalSounds -> AnimalSoundsScreen(
             onGamesClick = { navigateTo(LooLooScreen.Games) },
+            initialMode = experiencePolicy.animalSounds.newSessionMode,
         )
 
         LooLooScreen.CountingLevel -> CountingLevelScreen(
@@ -322,6 +403,7 @@ fun LooLooApp() {
         LooLooScreen.PuzzlePictures -> PuzzlePictureScreen(
             onPictureSelected = { selected ->
                 puzzlePictureName = selected.name
+                puzzleDifficultyName = experiencePolicy.puzzle.newPuzzleDifficulty.name
                 navigateTo(LooLooScreen.PuzzleDifficulty)
             },
             onGamesClick = { navigateTo(LooLooScreen.Games) },
@@ -335,6 +417,7 @@ fun LooLooApp() {
                 navigateTo(LooLooScreen.PuzzleBoard)
             },
             onPicturesClick = { navigateTo(LooLooScreen.PuzzlePictures) },
+            preferredDifficulty = experiencePolicy.puzzle.newPuzzleDifficulty,
         )
 
         LooLooScreen.PuzzleBoard -> PuzzleBoardScreen(

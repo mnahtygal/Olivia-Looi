@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.widthIn
@@ -106,7 +105,7 @@ fun BilliardsModeScreen(onMode: (BilliardsMode) -> Unit, onGamesClick: () -> Uni
     WinterGamesBackground(Modifier.fillMaxSize()) {
         BoxWithConstraints(Modifier.fillMaxSize()) {
             val tablet = maxWidth >= 600.dp
-            Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).statusBarsPadding().navigationBarsPadding().padding(16.dp),
+            Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).statusBarsPadding().padding(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 Text(stringResource(R.string.billiards_name), color = SnowWhite, fontSize = 34.sp, fontWeight = FontWeight.ExtraBold)
                 Text(stringResource(R.string.billiards_choose), color = SnowWhite, fontSize = 24.sp)
@@ -199,7 +198,7 @@ fun BilliardsTableScreen(mode: BilliardsMode, sessionId: Int, onMode: (Billiards
         BoxWithConstraints(Modifier.fillMaxSize()) {
             val tablet = maxWidth >= 600.dp
             val tableWidth = minOf(maxWidth - 24.dp, ((maxHeight - 190.dp).coerceAtLeast(420.dp)) * (664f / 1064f), 680.dp)
-            Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).statusBarsPadding().navigationBarsPadding().padding(12.dp),
+            Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).statusBarsPadding().padding(12.dp),
                 horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(stringResource(R.string.billiards_name), color = SnowWhite, fontSize = if (tablet) 30.sp else 25.sp, fontWeight = FontWeight.ExtraBold)
                 if (state.mode == BilliardsMode.VERSUS) {

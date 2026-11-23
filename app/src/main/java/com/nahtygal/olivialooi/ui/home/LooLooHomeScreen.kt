@@ -2,9 +2,11 @@ package com.nahtygal.olivialooi.ui.home
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -30,7 +32,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -76,6 +77,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import androidx.core.content.edit
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -83,9 +85,14 @@ import com.nahtygal.olivialooi.R
 import com.nahtygal.olivialooi.brain.LooLooKidBrain
 import com.nahtygal.olivialooi.network.AndroidJarvisChatClient
 import com.nahtygal.olivialooi.network.JarvisChatResult
+import com.nahtygal.olivialooi.profile.KidProfile
 import com.nahtygal.olivialooi.speech.AndroidSpeechRecognizer
 import com.nahtygal.olivialooi.speech.AndroidTextToSpeech
 import com.nahtygal.olivialooi.speech.SpeechRecognitionFailure
+import com.nahtygal.olivialooi.speech.VoiceActivityRouter
+import com.nahtygal.olivialooi.speech.VoiceRoute
+import com.nahtygal.olivialooi.speech.Opponent
+import com.nahtygal.olivialooi.ui.LocalKidProfile
 import com.nahtygal.olivialooi.ui.theme.AuroraPurple
 import com.nahtygal.olivialooi.ui.theme.DeepIndigo
 import com.nahtygal.olivialooi.ui.theme.FrostBlue
@@ -94,6 +101,7 @@ import com.nahtygal.olivialooi.ui.theme.OliviaLooiTheme
 import com.nahtygal.olivialooi.ui.theme.ReadyMint
 import com.nahtygal.olivialooi.ui.theme.SkyBlue
 import com.nahtygal.olivialooi.ui.theme.SnowWhite
+import com.nahtygal.olivialooi.ui.navigationSafeContentPadding
 import kotlin.math.ceil
 
 private enum class HomeSpeechState {
@@ -104,6 +112,7 @@ private enum class HomeSpeechState {
     Thinking,
     Response,
     NetworkError,
+    LocalNetworkPermissionDenied,
     NoSpeech,
     PermissionDenied,
     Error,
@@ -114,16 +123,28 @@ fun LooLooHomeScreen(
     onGamesClick: () -> Unit,
     onAppsClick: () -> Unit,
     onStoriesClick: () -> Unit,
+    onSwitchPlayerClick: () -> Unit,
     onActivityClick: (HomeActivity) -> Unit,
+    onVoiceActivity: (String, Opponent?) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
+    val activeProfile = LocalKidProfile.current
     var speechState by remember { mutableStateOf(HomeSpeechState.Ready) }
     var microphoneAmplitude by remember { mutableFloatStateOf(0f) }
     var recognizedText by remember { mutableStateOf<String?>(null) }
     var jarvisResponse by remember { mutableStateOf<String?>(null) }
-    var permissionRequestAttempted by rememberSaveable { mutableStateOf(false) }
+    var pendingOpponent by rememberSaveable { mutableStateOf(false) }
+    var microphonePermissionRequestAttempted by rememberSaveable { mutableStateOf(false) }
+    val permissionPreferences = remember(context) {
+        context.getSharedPreferences(PERMISSION_PREFERENCES, Context.MODE_PRIVATE)
+    }
+    var localNetworkPermissionRequestAttempted by rememberSaveable {
+        mutableStateOf(
+            permissionPreferences.getBoolean(LOCAL_NETWORK_PERMISSION_REQUESTED, false),
+        )
+    }
 
     val jarvisClient = remember(context) {
         AndroidJarvisChatClient(context.applicationContext)
@@ -131,9 +152,14 @@ fun LooLooHomeScreen(
     val textToSpeech = remember(context) {
         AndroidTextToSpeech(context.applicationContext)
     }
-    val kidBrain = remember { LooLooKidBrain() }
+    val kidBrain = remember(activeProfile) { LooLooKidBrain(activeProfile) }
 
     fun sendToJarvis(childMessage: String) {
+        if (!context.hasLocalNetworkAccess()) {
+            jarvisResponse = null
+            speechState = HomeSpeechState.LocalNetworkPermissionDenied
+            return
+        }
         val prompt = kidBrain.buildPrompt(childMessage)
         if (prompt == null) {
             recognizedText = null
@@ -159,6 +185,34 @@ fun LooLooHomeScreen(
         }
     }
 
+    fun handleSpeech(message: String) {
+        val route = VoiceActivityRouter.route(message, pendingOpponent)
+        pendingOpponent = route == VoiceRoute.AskOpponent
+        when (route) {
+            is VoiceRoute.Open -> {
+                jarvisResponse = null
+                speechState = HomeSpeechState.Ready
+                onVoiceActivity(route.id, route.opponent)
+            }
+            VoiceRoute.AskOpponent -> {
+                jarvisResponse = "Do you want to play with me or someone else?"
+                speechState = HomeSpeechState.Response
+                textToSpeech.speak(jarvisResponse!!)
+            }
+            VoiceRoute.ChooseGame -> {
+                jarvisResponse = "We can play Tic-Tac-Toe, Animal Sounds, or Memory Match. Which one?"
+                speechState = HomeSpeechState.Response
+                textToSpeech.speak(jarvisResponse!!)
+            }
+            VoiceRoute.Cancel -> {
+                jarvisResponse = "Okay!"
+                speechState = HomeSpeechState.Response
+                textToSpeech.speak(jarvisResponse!!)
+            }
+            VoiceRoute.Conversation -> sendToJarvis(message)
+        }
+    }
+
     val speechRecognizer = remember(context) {
         AndroidSpeechRecognizer(
             context = context.applicationContext,
@@ -175,7 +229,7 @@ fun LooLooHomeScreen(
             onFinalResult = {
                 microphoneAmplitude = 0f
                 recognizedText = it
-                sendToJarvis(it)
+                if (speechState == HomeSpeechState.Starting || speechState == HomeSpeechState.Listening || speechState == HomeSpeechState.Processing) handleSpeech(it)
             },
             onLevelChanged = { microphoneAmplitude = it },
             onFailure = { failure ->
@@ -201,14 +255,76 @@ fun LooLooHomeScreen(
     }
 
     val permissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission(),
-    ) { granted ->
-        if (granted) {
+        contract = ActivityResultContracts.RequestMultiplePermissions(),
+    ) {
+        when {
+            !context.hasLocalNetworkAccess() -> {
+                microphoneAmplitude = 0f
+                recognizedText = null
+                speechState = HomeSpeechState.LocalNetworkPermissionDenied
+            }
+
+            !context.hasMicrophoneAccess() -> {
+                microphoneAmplitude = 0f
+                recognizedText = null
+                speechState = HomeSpeechState.PermissionDenied
+            }
+
+            else -> {
+                startSpeechRecognition()
+            }
+        }
+    }
+
+    fun permissionDecision(): LooLooPermissionDecision =
+        LocalNetworkPermissionPolicy.decide(
+            sdkInt = Build.VERSION.SDK_INT,
+            localNetworkGranted = context.hasLocalNetworkAccess(),
+            microphoneGranted = context.hasMicrophoneAccess(),
+            localNetworkRequestAttempted = localNetworkPermissionRequestAttempted,
+            microphoneRequestAttempted = microphonePermissionRequestAttempted,
+        )
+
+    fun handlePermissionDecision(
+        decision: LooLooPermissionDecision,
+        onReady: () -> Unit,
+    ) {
+        when (decision) {
+            LooLooPermissionDecision.Ready -> onReady()
+            LooLooPermissionDecision.LocalNetworkUnavailable -> {
+                speechState = HomeSpeechState.LocalNetworkPermissionDenied
+            }
+
+            LooLooPermissionDecision.MicrophoneUnavailable -> {
+                speechState = HomeSpeechState.PermissionDenied
+            }
+
+            is LooLooPermissionDecision.Request -> {
+                val permissions = decision.permissions.map { permission ->
+                    when (permission) {
+                        LooLooPermission.LocalNetwork -> {
+                            localNetworkPermissionRequestAttempted = true
+                            permissionPreferences.edit {
+                                putBoolean(LOCAL_NETWORK_PERMISSION_REQUESTED, true)
+                            }
+                            LocalNetworkPermissionPolicy.PERMISSION
+                        }
+
+                        LooLooPermission.Microphone -> {
+                            microphonePermissionRequestAttempted = true
+                            Manifest.permission.RECORD_AUDIO
+                        }
+                    }
+                }
+                speechState = HomeSpeechState.Starting
+                permissionLauncher.launch(permissions.toTypedArray())
+            }
+        }
+    }
+
+    fun beginSpeechRecognition() {
+        handlePermissionDecision(permissionDecision()) {
             startSpeechRecognition()
-        } else {
-            microphoneAmplitude = 0f
-            recognizedText = null
-            speechState = HomeSpeechState.PermissionDenied
         }
     }
 
@@ -255,27 +371,13 @@ fun LooLooHomeScreen(
             -> Unit
 
             HomeSpeechState.NetworkError -> {
-                recognizedText?.let(::sendToJarvis)
+                handlePermissionDecision(permissionDecision()) {
+                    recognizedText?.let(::sendToJarvis)
+                }
                 Unit
             }
 
-            else -> {
-                val hasPermission = ContextCompat.checkSelfPermission(
-                    context,
-                    Manifest.permission.RECORD_AUDIO,
-                ) == PackageManager.PERMISSION_GRANTED
-
-                when {
-                    hasPermission -> startSpeechRecognition()
-                    !permissionRequestAttempted -> {
-                        permissionRequestAttempted = true
-                        speechState = HomeSpeechState.Starting
-                        permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-                    }
-
-                    else -> speechState = HomeSpeechState.PermissionDenied
-                }
-            }
+            else -> beginSpeechRecognition()
         }
     }
 
@@ -312,7 +414,9 @@ fun LooLooHomeScreen(
         onGamesClick = openGames,
         onAppsClick = openApps,
         onStoriesClick = { leaveHome(onStoriesClick) },
+        onSwitchPlayerClick = { leaveHome(onSwitchPlayerClick) },
         onActivityClick = { activity -> leaveHome { onActivityClick(activity) } },
+        activeProfile = activeProfile,
         modifier = modifier,
     )
 }
@@ -328,11 +432,13 @@ private fun LooLooHomeContent(
     onGamesClick: () -> Unit,
     onAppsClick: () -> Unit,
     onStoriesClick: () -> Unit,
+    onSwitchPlayerClick: () -> Unit,
     onActivityClick: (HomeActivity) -> Unit,
+    activeProfile: KidProfile,
     modifier: Modifier = Modifier,
 ) {
     var picker by rememberSaveable { mutableStateOf<HomeArtworkAction?>(null) }
-    val childName = stringResource(R.string.child_name_olivia)
+    val childName = activeProfile.displayName
     val isListening = speechState == HomeSpeechState.Starting ||
         speechState == HomeSpeechState.Listening ||
         speechState == HomeSpeechState.Processing
@@ -345,6 +451,8 @@ private fun LooLooHomeContent(
         HomeSpeechState.Thinking -> stringResource(R.string.looloo_thinking_message)
         HomeSpeechState.Response -> stringResource(R.string.looloo_response_label)
         HomeSpeechState.NetworkError -> stringResource(R.string.looloo_network_error_message)
+        HomeSpeechState.LocalNetworkPermissionDenied ->
+            stringResource(R.string.looloo_local_network_permission_message)
         HomeSpeechState.NoSpeech -> stringResource(R.string.looloo_no_speech_message)
         HomeSpeechState.PermissionDenied -> stringResource(R.string.looloo_microphone_permission_message)
         HomeSpeechState.Error -> stringResource(R.string.looloo_recognition_error_message)
@@ -357,6 +465,8 @@ private fun LooLooHomeContent(
 
         HomeSpeechState.Processing -> stringResource(R.string.looloo_processing_prompt)
         HomeSpeechState.NetworkError -> stringResource(R.string.looloo_network_retry_prompt)
+        HomeSpeechState.LocalNetworkPermissionDenied ->
+            stringResource(R.string.looloo_local_network_permission_help)
         HomeSpeechState.PermissionDenied -> stringResource(R.string.looloo_microphone_permission_help)
         HomeSpeechState.NoSpeech,
         HomeSpeechState.Error,
@@ -384,6 +494,7 @@ private fun LooLooHomeContent(
         HomeSpeechState.NoSpeech,
         HomeSpeechState.Error,
         HomeSpeechState.PermissionDenied,
+        HomeSpeechState.LocalNetworkPermissionDenied,
         -> R.string.looloo_try_again_action
 
         HomeSpeechState.Starting,
@@ -408,7 +519,7 @@ private fun LooLooHomeContent(
                 ),
             )
             .statusBarsPadding()
-            .navigationBarsPadding(),
+            .navigationSafeContentPadding(),
     ) {
         // Keep the portrait artwork readable; extra speech content scrolls instead
         // of squeezing the girls or the functional controls into the remaining space.
@@ -441,6 +552,14 @@ private fun LooLooHomeContent(
                 fontWeight = FontWeight.SemiBold,
                 letterSpacing = 0.5.sp,
                 lineHeight = 22.sp,
+                textAlign = TextAlign.Center,
+            )
+            Text(
+                text = stringResource(R.string.looloo_greeting, childName),
+                color = SnowWhite,
+                fontSize = 24.sp,
+                fontWeight = FontWeight.ExtraBold,
+                lineHeight = 30.sp,
                 textAlign = TextAlign.Center,
             )
 
@@ -527,6 +646,8 @@ private fun LooLooHomeContent(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 AppsButton(onClick = onAppsClick)
+                Spacer(modifier = Modifier.width(6.dp))
+                SwitchPlayerButton(onClick = onSwitchPlayerClick)
                 Spacer(modifier = Modifier.width(6.dp))
                 SettingsButton(onClick = onSettingsClick)
             }
@@ -693,6 +814,21 @@ private fun MicrophoneLevelMeter(amplitude: Float, modifier: Modifier = Modifier
 }
 
 private const val METER_VISIBLE_THRESHOLD = 0.035f
+private const val PERMISSION_PREFERENCES = "looloo_permission_requests"
+private const val LOCAL_NETWORK_PERMISSION_REQUESTED = "local_network_permission_requested"
+
+private fun Context.hasLocalNetworkAccess(): Boolean =
+    !LocalNetworkPermissionPolicy.requiresRuntimePermission(Build.VERSION.SDK_INT) ||
+        ContextCompat.checkSelfPermission(
+            this,
+            LocalNetworkPermissionPolicy.PERMISSION,
+        ) == PackageManager.PERMISSION_GRANTED
+
+private fun Context.hasMicrophoneAccess(): Boolean =
+    ContextCompat.checkSelfPermission(
+        this,
+        Manifest.permission.RECORD_AUDIO,
+    ) == PackageManager.PERMISSION_GRANTED
 
 @Composable
 private fun SettingsButton(onClick: () -> Unit) {
@@ -748,6 +884,26 @@ private fun AppsButton(onClick: () -> Unit) {
         Text(
             text = stringResource(R.string.apps_action),
             fontSize = 18.sp,
+            fontWeight = FontWeight.ExtraBold,
+        )
+    }
+}
+
+@Composable
+private fun SwitchPlayerButton(onClick: () -> Unit) {
+    Button(
+        onClick = onClick,
+        modifier = Modifier.heightIn(min = 52.dp),
+        shape = RoundedCornerShape(24.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = SnowWhite.copy(alpha = 0.92f),
+            contentColor = DeepIndigo,
+        ),
+        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
+    ) {
+        Text(
+            text = stringResource(R.string.profile_switch_player),
+            fontSize = 17.sp,
             fontWeight = FontWeight.ExtraBold,
         )
     }
@@ -842,7 +998,9 @@ private fun LooLooReadyPreview() {
             onGamesClick = {},
             onAppsClick = {},
             onStoriesClick = {},
+            onSwitchPlayerClick = {},
             onActivityClick = {},
+            activeProfile = KidProfile.OLIVIA,
         )
     }
 }
@@ -867,7 +1025,9 @@ private fun LooLooListeningPreview() {
             onGamesClick = {},
             onAppsClick = {},
             onStoriesClick = {},
+            onSwitchPlayerClick = {},
             onActivityClick = {},
+            activeProfile = KidProfile.OLIVIA,
         )
     }
 }

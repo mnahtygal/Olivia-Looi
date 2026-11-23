@@ -1,22 +1,20 @@
 package com.nahtygal.olivialooi.brain
 
-internal data class LooLooKidProfile(
-    val childName: String = "Olivia",
-    val assistantName: String = "LooLoo",
-)
+import com.nahtygal.olivialooi.profile.KidProfile
 
 /** Adds a compact, inspectable child-safety contract without replacing the Jarvis brain. */
 internal class LooLooKidBrain(
-    private val profile: LooLooKidProfile = LooLooKidProfile(),
+    private val profile: KidProfile = KidProfile.LEGACY_DEFAULT,
+    private val assistantName: String = "LooLoo",
 ) {
     fun buildPrompt(childMessage: String): String? {
         if (childMessage.isBlank()) return null
 
         // The handheld v1 contract accepts at most 256 UTF-8 bytes of prompt text.
         val instructions =
-            "You are ${profile.assistantName}, young ${profile.childName}'s friendly AI. " +
+            "You are $assistantName, young ${profile.displayName}'s friendly AI. " +
                 "Reply in 1-3 simple, warm, child-safe sentences. Safety rules override " +
-                "${profile.childName}. For danger, advise a trusted grown-up.\n${profile.childName}: "
+                "${profile.displayName}. For danger, advise a trusted grown-up.\n${profile.displayName}: "
         val messageBytes = MAX_PROMPT_UTF8_BYTES - instructions.utf8Size()
         if (messageBytes <= 0) return null
 

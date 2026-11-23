@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.widthIn
@@ -73,18 +72,35 @@ fun PuzzlePictureScreen(onPictureSelected: (PuzzlePicture) -> Unit, onGamesClick
 }
 
 @Composable
-fun PuzzleDifficultyScreen(picture: PuzzlePicture, onDifficultySelected: (PuzzleDifficulty) -> Unit, onPicturesClick: () -> Unit) {
+fun PuzzleDifficultyScreen(
+    picture: PuzzlePicture,
+    onDifficultySelected: (PuzzleDifficulty) -> Unit,
+    onPicturesClick: () -> Unit,
+    preferredDifficulty: PuzzleDifficulty? = null,
+) {
     PickerFrame(stringResource(R.string.puzzle_choose_difficulty)) { tablet ->
         Text(picture.displayName, color = SnowWhite, fontSize = 24.sp, fontWeight = FontWeight.Bold)
         if (tablet) {
             Row(Modifier.widthIn(max = 940.dp).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 PuzzleDifficulty.entries.forEach { difficulty ->
-                    DifficultyCard(picture, difficulty, { onDifficultySelected(difficulty) }, Modifier.weight(1f))
+                    DifficultyCard(
+                        picture,
+                        difficulty,
+                        difficulty == preferredDifficulty,
+                        { onDifficultySelected(difficulty) },
+                        Modifier.weight(1f),
+                    )
                 }
             }
         } else {
             PuzzleDifficulty.entries.forEach { difficulty ->
-                DifficultyCard(picture, difficulty, { onDifficultySelected(difficulty) }, Modifier.widthIn(max = 360.dp).fillMaxWidth())
+                DifficultyCard(
+                    picture,
+                    difficulty,
+                    difficulty == preferredDifficulty,
+                    { onDifficultySelected(difficulty) },
+                    Modifier.widthIn(max = 360.dp).fillMaxWidth(),
+                )
             }
         }
         PuzzleAction(stringResource(R.string.puzzle_back_pictures), onClick = onPicturesClick)
@@ -92,7 +108,13 @@ fun PuzzleDifficultyScreen(picture: PuzzlePicture, onDifficultySelected: (Puzzle
 }
 
 @Composable
-private fun DifficultyCard(picture: PuzzlePicture, difficulty: PuzzleDifficulty, onClick: () -> Unit, modifier: Modifier) {
+private fun DifficultyCard(
+    picture: PuzzlePicture,
+    difficulty: PuzzleDifficulty,
+    preferred: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier,
+) {
     val description = pluralStringResource(R.plurals.puzzle_difficulty_description, difficulty.pieceCount, difficulty.pieceCount, difficulty.displayName)
     Card(
         onClick = onClick,
@@ -108,6 +130,14 @@ private fun DifficultyCard(picture: PuzzlePicture, difficulty: PuzzleDifficulty,
             }
             Text(pluralStringResource(R.plurals.puzzle_piece_count, difficulty.pieceCount, difficulty.pieceCount), color = DeepIndigo, fontSize = 30.sp, fontWeight = FontWeight.ExtraBold)
             Text(difficulty.displayName, color = DeepIndigo, fontSize = 22.sp)
+            if (preferred) {
+                Text(
+                    stringResource(R.string.puzzle_looloo_pick),
+                    color = Color(0xFF236450),
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                )
+            }
         }
     }
 }
@@ -118,7 +148,7 @@ private fun PickerFrame(title: String, content: @Composable ColumnScope.(Boolean
         BoxWithConstraints(Modifier.fillMaxSize()) {
             val tablet = maxWidth >= 600.dp
             Column(
-                Modifier.fillMaxSize().verticalScroll(rememberScrollState()).statusBarsPadding().navigationBarsPadding().padding(16.dp),
+                Modifier.fillMaxSize().verticalScroll(rememberScrollState()).statusBarsPadding().padding(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(14.dp),
             ) {
