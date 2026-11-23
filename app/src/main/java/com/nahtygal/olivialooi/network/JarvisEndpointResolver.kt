@@ -14,12 +14,19 @@ import javax.net.ssl.SSLSocketFactory
 import javax.net.ssl.TrustManagerFactory
 import com.nahtygal.olivialooi.R
 
+internal data class ResolvedJarvisEndpoint(
+    val endpoint: JarvisEndpoint,
+    val network: android.net.Network? = null,
+)
+
 internal class JarvisEndpointResolver(context: Context) {
 
     private val appContext = context.applicationContext
 
-    fun resolve(): JarvisEndpoint {
-        if (!hasLocalNetworkPermission()) return JarvisEndpoint.AWAY
+    fun resolve(): ResolvedJarvisEndpoint {
+        if (!hasLocalNetworkPermission()) {
+            return ResolvedJarvisEndpoint(JarvisEndpoint.AWAY)
+        }
 
         val connectivity = appContext.getSystemService(
             Context.CONNECTIVITY_SERVICE
@@ -37,10 +44,12 @@ internal class JarvisEndpointResolver(context: Context) {
 
             if (!localTransport) continue
 
-            if (probeHome(network)) return JarvisEndpoint.HOME
+            if (probeHome(network)) {
+                return ResolvedJarvisEndpoint(JarvisEndpoint.HOME, network)
+            }
         }
 
-        return JarvisEndpoint.AWAY
+        return ResolvedJarvisEndpoint(JarvisEndpoint.AWAY)
     }
 
     private fun hasLocalNetworkPermission(): Boolean {

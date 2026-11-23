@@ -32,6 +32,7 @@ internal class AndroidJarvisChatClient(
     private val bearerToken: String = JarvisChatConfig.bearerToken,
 ) : AutoCloseable {
     private val applicationContext = context.applicationContext
+    private val endpointResolver = JarvisEndpointResolver(applicationContext)
     private val mainHandler = Handler(Looper.getMainLooper())
     private val executor = Executors.newSingleThreadExecutor { task ->
         Thread(task, "looloo-jarvis").apply { isDaemon = true }
@@ -80,8 +81,26 @@ internal class AndroidJarvisChatClient(
             return JarvisChatResult.Failure(JarvisChatFailure.Configuration)
         }
 
+        val resolvedEndpoint = try {
+            endpointResolver.resolve()
+        } catch (error: Exception) {
+            Log.w(TAG, "JARVIS_ENDPOINT_RESOLUTION_FAILED")
+            return JarvisChatResult.Failure(JarvisChatFailure.Connection)
+        }
+
+        if (generation.get() != requestGeneration || isClosed) {
+            return JarvisChatResult.Failure(JarvisChatFailure.Connection)
+        }
+
+        val selectedBaseUrl = JarvisEndpointPolicy.baseUrl(
+            resolvedEndpoint.endpoint,
+            baseUrl,
+        )
+
+        Log.d(TAG, "JARVIS_ENDPOINT_SELECTED endpoint=${resolvedEndpoint.endpoint}")
+
         val requestUrl = try {
-            URL(baseUrl + JarvisChatConfig.CHAT_PATH).also {
+            URL(selectedBaseUrl + JarvisChatConfig.CHAT_PATH).also {
                 if (it.protocol != "https") throw IllegalArgumentException("Jarvis URL must use HTTPS")
             }
         } catch (error: IllegalArgumentException) {
@@ -90,8 +109,18 @@ internal class AndroidJarvisChatClient(
         }
 
         val connection = try {
-            (requestUrl.openConnection() as HttpsURLConnection).apply {
-                sslSocketFactory = createJarvisSocketFactory()
+            val openedConnection = if (resolvedEndpoint.endpoint == JarvisEndpoint.HOME) {
+                val network = resolvedEndpoint.network
+                    ?: throw IllegalStateException("Home network missing")
+                network.openConnection(requestUrl) as HttpsURLConnection
+            } else {
+                requestUrl.openConnection() as HttpsURLConnection
+            }
+
+            openedConnection.apply {
+                if (resolvedEndpoint.endpoint == JarvisEndpoint.HOME) {
+                    sslSocketFactory = createJarvisSocketFactory()
+                }
                 requestMethod = "POST"
                 connectTimeout = CONNECT_TIMEOUT_MILLIS
                 readTimeout = READ_TIMEOUT_MILLIS

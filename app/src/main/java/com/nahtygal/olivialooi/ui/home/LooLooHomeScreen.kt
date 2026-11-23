@@ -155,11 +155,6 @@ fun LooLooHomeScreen(
     val kidBrain = remember(activeProfile) { LooLooKidBrain(activeProfile) }
 
     fun sendToJarvis(childMessage: String) {
-        if (!context.hasLocalNetworkAccess()) {
-            jarvisResponse = null
-            speechState = HomeSpeechState.LocalNetworkPermissionDenied
-            return
-        }
         val prompt = kidBrain.buildPrompt(childMessage)
         if (prompt == null) {
             recognizedText = null
@@ -258,12 +253,6 @@ fun LooLooHomeScreen(
         contract = ActivityResultContracts.RequestMultiplePermissions(),
     ) {
         when {
-            !context.hasLocalNetworkAccess() -> {
-                microphoneAmplitude = 0f
-                recognizedText = null
-                speechState = HomeSpeechState.LocalNetworkPermissionDenied
-            }
-
             !context.hasMicrophoneAccess() -> {
                 microphoneAmplitude = 0f
                 recognizedText = null
@@ -283,6 +272,7 @@ fun LooLooHomeScreen(
             microphoneGranted = context.hasMicrophoneAccess(),
             localNetworkRequestAttempted = localNetworkPermissionRequestAttempted,
             microphoneRequestAttempted = microphonePermissionRequestAttempted,
+            requiresHomeNetwork = false,
         )
 
     fun handlePermissionDecision(
