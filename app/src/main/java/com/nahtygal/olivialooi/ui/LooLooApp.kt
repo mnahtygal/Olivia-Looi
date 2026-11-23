@@ -56,6 +56,7 @@ import com.nahtygal.olivialooi.ui.games.tracing.LetterTracingScreen
 import com.nahtygal.olivialooi.ui.stories.StoryTimeScreen
 import com.nahtygal.olivialooi.ui.home.HomeActivity
 import com.nahtygal.olivialooi.ui.home.LooLooHomeScreen
+import com.nahtygal.olivialooi.speech.Opponent
 import com.nahtygal.olivialooi.ui.profile.ProfileChooserScreen
 
 private enum class LooLooScreen {
@@ -199,6 +200,30 @@ private fun LooLooAppContent(
 
     when (screen) {
         LooLooScreen.Home -> LooLooHomeScreen(
+            onVoiceActivity = { id, opponent ->
+                val destination = when (id) {
+                    "tictactoe" -> {
+                        gameModeName = if (opponent == Opponent.PERSON) TicTacToeGameMode.PersonVsPerson.name else TicTacToeGameMode.PersonVsComputer.name
+                        LooLooScreen.TicTacToeGame
+                    }
+                    "animals" -> LooLooScreen.AnimalSounds
+                    "memory" -> LooLooScreen.MemoryMatchMode
+                    "coloring" -> LooLooScreen.ColoringPictures
+                    "spelling" -> LooLooScreen.SpeakAndSpellLevel
+                    "counting" -> LooLooScreen.CountingLevel
+                    "math" -> LooLooScreen.MathLevel
+                    "billiards" -> LooLooScreen.BilliardsModes
+                    "drums" -> LooLooScreen.Drums
+                    "piano" -> LooLooScreen.Piano
+                    "puzzles" -> LooLooScreen.PuzzlePictures
+                    "shapes" -> LooLooScreen.ShapesAdventure
+                    "abc" -> LooLooScreen.AbcAdventure
+                    "tracing" -> LooLooScreen.LetterTracing
+                    "story" -> LooLooScreen.StoryTime
+                    else -> LooLooScreen.Home
+                }
+                navigateTo(destination)
+            },
             onGamesClick = { navigateTo(LooLooScreen.Games) },
             onAppsClick = { navigateTo(LooLooScreen.Apps) },
             onStoriesClick = { navigateTo(LooLooScreen.StoryTime) },

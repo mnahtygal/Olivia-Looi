@@ -89,6 +89,9 @@ import com.nahtygal.olivialooi.profile.KidProfile
 import com.nahtygal.olivialooi.speech.AndroidSpeechRecognizer
 import com.nahtygal.olivialooi.speech.AndroidTextToSpeech
 import com.nahtygal.olivialooi.speech.SpeechRecognitionFailure
+import com.nahtygal.olivialooi.speech.VoiceActivityRouter
+import com.nahtygal.olivialooi.speech.VoiceRoute
+import com.nahtygal.olivialooi.speech.Opponent
 import com.nahtygal.olivialooi.ui.LocalKidProfile
 import com.nahtygal.olivialooi.ui.theme.AuroraPurple
 import com.nahtygal.olivialooi.ui.theme.DeepIndigo
@@ -122,6 +125,7 @@ fun LooLooHomeScreen(
     onStoriesClick: () -> Unit,
     onSwitchPlayerClick: () -> Unit,
     onActivityClick: (HomeActivity) -> Unit,
+    onVoiceActivity: (String, Opponent?) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -131,6 +135,7 @@ fun LooLooHomeScreen(
     var microphoneAmplitude by remember { mutableFloatStateOf(0f) }
     var recognizedText by remember { mutableStateOf<String?>(null) }
     var jarvisResponse by remember { mutableStateOf<String?>(null) }
+    var pendingOpponent by rememberSaveable { mutableStateOf(false) }
     var microphonePermissionRequestAttempted by rememberSaveable { mutableStateOf(false) }
     val permissionPreferences = remember(context) {
         context.getSharedPreferences(PERMISSION_PREFERENCES, Context.MODE_PRIVATE)
@@ -180,6 +185,34 @@ fun LooLooHomeScreen(
         }
     }
 
+    fun handleSpeech(message: String) {
+        val route = VoiceActivityRouter.route(message, pendingOpponent)
+        pendingOpponent = route == VoiceRoute.AskOpponent
+        when (route) {
+            is VoiceRoute.Open -> {
+                jarvisResponse = null
+                speechState = HomeSpeechState.Ready
+                onVoiceActivity(route.id, route.opponent)
+            }
+            VoiceRoute.AskOpponent -> {
+                jarvisResponse = "Do you want to play with me or someone else?"
+                speechState = HomeSpeechState.Response
+                textToSpeech.speak(jarvisResponse!!)
+            }
+            VoiceRoute.ChooseGame -> {
+                jarvisResponse = "We can play Tic-Tac-Toe, Animal Sounds, or Memory Match. Which one?"
+                speechState = HomeSpeechState.Response
+                textToSpeech.speak(jarvisResponse!!)
+            }
+            VoiceRoute.Cancel -> {
+                jarvisResponse = "Okay!"
+                speechState = HomeSpeechState.Response
+                textToSpeech.speak(jarvisResponse!!)
+            }
+            VoiceRoute.Conversation -> sendToJarvis(message)
+        }
+    }
+
     val speechRecognizer = remember(context) {
         AndroidSpeechRecognizer(
             context = context.applicationContext,
@@ -196,7 +229,7 @@ fun LooLooHomeScreen(
             onFinalResult = {
                 microphoneAmplitude = 0f
                 recognizedText = it
-                sendToJarvis(it)
+                if (speechState == HomeSpeechState.Starting || speechState == HomeSpeechState.Listening || speechState == HomeSpeechState.Processing) handleSpeech(it)
             },
             onLevelChanged = { microphoneAmplitude = it },
             onFailure = { failure ->
